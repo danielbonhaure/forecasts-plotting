@@ -1,0 +1,47 @@
+
+spatial_domain:
+  nla: -10  # Northernmost latitude
+  sla: -52  # Southernmost latitude
+  wlo: -78  # Westernmost longitude
+  elo: -36  # Easternmost longitude
+  
+exclude_coords_with_no_gen_data: TRUE
+
+initial_conditions:
+  month: 5
+  year: 2022
+
+global_folders:
+  shapefiles: "/data/shapefiles"
+  images: "/data/images"
+
+acc-cpt:  
+  variables: ["prcp", "t2m"]
+  modelos: ["ecmwf", "nmme", "nasa"]
+  fuentes: ["chirps", "era5-land", "crcsas"]
+  input_folders:
+    observed_data: "/data/acc-cpt/input/predictands"
+    uncalibrated_data: "/data/acc-cpt/input/predictors"
+    calibrated_data: 
+      forecasts: "/data/acc-cpt/output"
+      hindcasts: "/data/acc-cpt/output"
+  correction_strategies:
+    calibrated_data:
+      det_values:
+        forecasts: 
+          prcp: "cpt_invalid_prcp_values"
+        hindcasts: 
+          prcp: "cpt_invalid_prcp_values"
+  output_folder: "/data/acc-cpt/plots/web-crc-sas"
+  suavizar_graficos: TRUE
+
+ereg:  
+  variables: ["prec", "tref"]
+  modelos:  ["mme"]
+  input_folders:
+    observed_data: "/data/ereg/generados/nmme_output"
+    uncalibrated_data: null
+    calibrated_data: 
+      forecasts: "/data/ereg/generados/nmme_output/rt_forecasts"
+      hindcasts: "/data/ereg/generados/nmme_output/comb_forecasts"
+  output_folder: "/data/ereg/generados/nmme_figuras/web-crc-sas"
