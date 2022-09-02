@@ -159,13 +159,13 @@ CPTprcpPronoCorrectionStrategy <- R6::R6Class(
   public = list(
     initialize = function(lon_col = "longitude", lat_col = "latitude", 
                           value_col = "prcp", year_col = "year", 
-                          month_col = "month", obs_mean_df, ...) {
+                          month_col = "month", df_to_get_sd, ...) {
       private$pv_lon_col <- lon_col
       private$pv_lat_col <- lat_col
       private$pv_value_col <- value_col
       private$pv_year_col <- year_col
       private$pv_month_col <- month_col
-      private$pv_obs_data <- obs_mean_df
+      private$pv_df_to_get_sd <- df_to_get_sd
     },
     apply_correction = function(data_to_correct) {
       # Corregir valores fuera de rango (asignar random entre 0 y 0.1, sin 0 y 0.1)
@@ -212,12 +212,12 @@ CPTprcpPronoCorrectionStrategy <- R6::R6Class(
     pv_value_col = NULL,
     pv_year_col = NULL,
     pv_month_col = NULL,
-    pv_obs_data = NULL,
+    pv_df_to_get_sd = NULL,
     
     get_correction_ranges = function() {
       agrupar_por <- c(private$pv_lon_col, private$pv_lat_col)
       # Calcular estadísticas sobre de los datos observados
-      sd_obs_data <- private$pv_obs_data %>%
+      sd_obs_data <- private$pv_df_to_get_sd %>%
         # como la variable analizada es siempre precipitación, no puede haber
         # valores menores a 0, si los hay, puede que se trate de un error o que 
         # ese valor haya sido utilizado para representar los NA (ej: -999)

@@ -92,7 +92,7 @@ DatosEntrada <- R6::R6Class(
         correction_factory <- CorrectionStrategyFactory$new(
           strategy = obs_config$correction_strategies$observed_data)
         correction_strategy <- correction_factory$create_obj(
-          obs_mean_df = self$obs_data$data, value_col = self$variable)
+          df_to_get_sd = self$obs_data$data, value_col = self$variable)
       }
       
       # Crear factoría
@@ -141,7 +141,7 @@ DatosEntrada <- R6::R6Class(
         correction_factory <- CorrectionStrategyFactory$new(
           strategy = det_fcst_config$correction_strategies$calibrated_data$det_values$forecasts[[self$variable]])
         correction_strategy <- correction_factory$create_obj(
-          obs_mean_df = self$obs_data$data, value_col = self$variable)
+          df_to_get_sd = self$obs_data$data, value_col = self$variable)
       }
       
       # Crear proveedor de factoría
@@ -166,7 +166,7 @@ DatosEntrada <- R6::R6Class(
       
       # Se agrega la columna anomaly o self$variable según sea necesario
       self$pred_det_fcst_data$add_anom_or_det(
-        obs_mean_df = self$obs_data$data,
+        df_to_get_mean = self$obs_data$data,
         self$files_info$hcst_first_year, 
         self$files_info$hcst_last_year)
     },
@@ -185,7 +185,7 @@ DatosEntrada <- R6::R6Class(
         correction_factory <- CorrectionStrategyFactory$new(
           strategy = det_hcst_config$correction_strategies$calibrated_data$det_values$hindcasts[[self$variable]])
         correction_strategy <- correction_factory$create_obj(
-          obs_mean_df = self$obs_data$data, value_col = self$variable)
+          df_to_get_sd = self$obs_data$data, value_col = self$variable)
       }
       
       # Crear proveedor de factoría
@@ -210,7 +210,7 @@ DatosEntrada <- R6::R6Class(
       
       # Se agrega la columna anomaly o self$variable según sea necesario
       self$pred_det_hcst_data$add_anom_or_det(
-        obs_mean_df = self$obs_data$data,
+        df_to_get_mean = self$obs_data$data,
         self$files_info$hcst_first_year, 
         self$files_info$hcst_last_year)
     },
@@ -293,7 +293,7 @@ DatosEntrada <- R6::R6Class(
           correction_factory <- CorrectionStrategyFactory$new(
             strategy = uncal_fcst_config$correction_strategies$uncalibrated_data)
           correction_strategy <- correction_factory$create_obj(
-            obs_mean_df = self$obs_data$data, value_col = self$variable)
+            df_to_get_sd = self$obs_data$data, value_col = self$variable)
         }
         
         # Crear proveedor de factoría
