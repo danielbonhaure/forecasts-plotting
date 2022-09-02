@@ -173,16 +173,16 @@ FcstDeterministicData <- R6::R6Class(
       private$load_data()
     },
     
-    add_anom_or_det = function(obs_mean_df, 
+    add_anom_or_det = function(df_to_get_mean, 
                                lower_training_year = NULL,
                                higher_training_year = NULL) {
       
-      # Definir las columnas que debe tener obs_mean_df
+      # Definir las columnas que debe tener df_to_get_mean
       needed_cols <- c("longitude", "latitude", "year", "month", self$variable)
-      obs_mean_df <- obs_mean_df %>% dplyr::select(dplyr::any_of(needed_cols))
+      df_to_get_mean <- df_to_get_mean %>% dplyr::select(dplyr::any_of(needed_cols))
       
-      # Si obs_mean_df no tiene las columnas apropiadas, no se puede seguir
-      if ( ! all( needed_cols %in% colnames(obs_mean_df) ) ) {
+      # Si df_to_get_mean no tiene las columnas apropiadas, no se puede seguir
+      if ( ! all( needed_cols %in% colnames(df_to_get_mean) ) ) {
         warning("El df con datos obsevardos no tiene las columnas esperadas")
         return ( invisible(NULL) )
       }
@@ -191,12 +191,12 @@ FcstDeterministicData <- R6::R6Class(
       grilla_self_data <- self$data %>% 
         dplyr::select(longitude, latitude) %>%
         dplyr::distinct()
-      grilla_obs_mean_df <- obs_mean_df %>% 
+      grilla_df_mean <- df_to_get_mean %>% 
         dplyr::select(longitude, latitude) %>%
         dplyr::distinct()
       grilla_comun <- grilla_self_data %>% 
-        dplyr::inner_join(grilla_obs_mean_df, by = c("longitude", "latitude"))
-      if ( nrow(grilla_self_data) != nrow(grilla_obs_mean_df) |
+        dplyr::inner_join(grilla_df_mean, by = c("longitude", "latitude"))
+      if ( nrow(grilla_self_data) != nrow(grilla_df_mean) |
            nrow(grilla_self_data) != nrow(grilla_comun) ) {
         warning("El df con datos obsevardos y el df con datos ",
                 "pronosticados no tienen la misma grilla")
@@ -207,7 +207,7 @@ FcstDeterministicData <- R6::R6Class(
       #
       
       # Se recalcula el promedio, para estar seguros de usar el promedio correcto
-      promedios <- obs_mean_df %>%
+      promedios <- df_to_get_mean %>%
         # Se excluyen los años que no deben ser usados para el cálculo 
         # de las estadísticas (si fueron definidos)
         { if ( !is.null(lower_training_year) ) 
