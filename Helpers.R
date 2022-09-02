@@ -110,6 +110,41 @@ get_value_color <- function(valor, breaks, colors, na_value_color) {
 }
 
 
+# Método que permite calcular las distancias entre elementos 
+# adyacentes en un vector de longitudes o latitudes.
+spatial_dist = function(x) {
+  # Primero se ordena el vector de mayor a menor, esto es correcto
+  # porque el vector solo puede tener longitudes o latitudes, y por 
+  # porque el objetivo de la función es calcular distancias entre 
+  # elementos espacialmente adyacentes.
+  x <- sort(unique(x), decreasing = T)
+  
+  # Despues, a partir del vector ordenado, se crean dos vectores.
+  # El 1ero toma desde el 1er elemento del vector hasta el anteúltimo.
+  # El 2do toma desde el 2do elemento del vactor hasta el último.
+  # Con esto se logra que el 1er vector tengo siempre un valor mayor
+  # que el segundo vector. Finalmente, restanto estos dos vectores es
+  # posible obtener la distancia entre elementos consecutivos del
+  # vector recibido como parámetro originalmente.
+  x_dist <- x[seq(1,length(x)-1)] - x[seq(2,length(x)-0)]
+  
+  # Se retornan las diferencias/distancias
+  return ( x_dist )
+}
+
+
+are_points_gridded = function(points_df) {
+  # Definir la diferencias entre las longitudes y latitudes
+  x_diff <- spatial_dist(points_df$longitude)
+  y_diff <- spatial_dist(points_df$latitude)
+  
+  # Determinar si los puntos forman o no una grilla regular
+  return ( min(x_diff) == mean(x_diff) && mean(x_diff) == max(x_diff) && 
+             min(y_diff) == mean(y_diff) && mean(y_diff) == max(y_diff) )
+  
+}
+
+
 GenerarHTMLLogo <- function(logo.file) {
   logo.ascii <- base::readBin(con = logo.file,
                               what = "raw",
@@ -125,8 +160,9 @@ GenerarHTMLLogo <- function(logo.file) {
 PlotsHelper <- R6::R6Class(
   classname = "PlotsHelper",
   public = list(
-    graficar_mapa = function(data_df, main_title, legend_title, 
-                             spatial_domain, output_file_abspath, 
+    graficar_mapa = function(data_df, gridded_data, spatial_domain, 
+                             main_title, legend_title, 
+                             output_file_abspath, 
                              breaks = NULL, colors = NULL, 
                              save_map = T) {
       
@@ -150,13 +186,13 @@ PlotsHelper <- R6::R6Class(
           c_color = purrr::map_chr(
             value, ~ get_value_color(.x, breaks, colors, na_color)) )
       
-      # Identificar distancia entre puntos de la grilla
-      dist_between_lon <- 
-        abs(sort(unique(data_df$longitude))[1] - 
-              sort(unique(data_df$longitude))[2]) / 2
-      dist_between_lat <- 
-        abs(sort(unique(data_df$longitude))[1] - 
-              sort(unique(data_df$longitude))[2]) / 2
+      # Identificar distancia entre puntos a graficar
+      dist_between_lon <- min(spatial_dist(data_df$longitude)) / 2
+      dist_between_lat <- min(spatial_dist(data_df$latitude)) / 2
+      if (!gridded_data) {
+        min_distance <- min(dist_between_lon, dist_between_lat)
+        circle_radius <- ifelse(min_distance < 2, 3, 5)
+      }
       
       # Generar el gráfico
       css_fix_1 <- 
@@ -187,19 +223,35 @@ PlotsHelper <- R6::R6Class(
           fillOpacity = 0.0,
           smoothFactor = 0.5,
           color = "#000000") %>%
-        leaflet::addRectangles(
-          map = .,
-          data = data_df,
-          lng1 = ~ longitude - dist_between_lon,
-          lat1 = ~ latitude - dist_between_lat,
-          lng2 = ~ longitude + dist_between_lon,
-          lat2 = ~ latitude + dist_between_lat,
-          stroke = FALSE,
-          fillColor = ~ c_color,
-          fillOpacity = 0.7,
-          popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                               "<center>Valor: {auto_round(value)}</center>"),
-          label = ~ as.character(auto_round(value))) %>%
+        { if ( gridded_data ) 
+          leaflet::addRectangles(
+            map = .,
+            data = data_df,
+            lng1 = ~ longitude - dist_between_lon,
+            lat1 = ~ latitude - dist_between_lat,
+            lng2 = ~ longitude + dist_between_lon,
+            lat2 = ~ latitude + dist_between_lat,
+            stroke = FALSE,
+            fillColor = ~ c_color,
+            fillOpacity = 0.7,
+            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
+                                 "<center>Val: {auto_round(value)}</center>"),
+            label = ~ as.character(auto_round(value)))
+          else . } %>%
+        { if ( !gridded_data ) 
+          leaflet::addCircleMarkers(
+            map = .,
+            lng = ~ longitude,
+            lat = ~ latitude,
+            data = data_df,
+            radius = circle_radius,
+            stroke = FALSE,
+            fillColor = ~ c_color,
+            fillOpacity = 0.7,
+            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
+                                 "<center>Val: {auto_round(value)}</center>"),
+            label = ~ as.character(auto_round(value)))
+          else . } %>%
         leaflet::addLegend(
           map = .,
           position = "bottomright", 
@@ -248,37 +300,38 @@ PlotsHelper <- R6::R6Class(
       # Retornar mapa (para pruebas)
       return ( m )
     },
-    graficar_mapa_prob = function(data_df, main_title,
-                                  spatial_domain, output_file_abspath, 
+    graficar_mapa_prob = function(data_df, gridded_data, spatial_domain,
+                                  main_title, output_file_abspath, 
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
                                   save_map = T) {
         
-        # Determinar el color de cada celda
-        data_df <- data_df %>%
-          dplyr::mutate(
-            c_color = dplyr::case_when(
-              category == 'below' ~ purrr::map_chr(
-                .x = prob_below, 
-                .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_below, na_color_prob)),
-              category == 'normal' ~ purrr::map_chr(
-                .x = prob_normal, 
-                .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
-              category == 'above' ~ purrr::map_chr(
-                .x = prob_above, 
-                .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_above, na_color_prob)),
-              is.na(category) ~ purrr::map_chr(
-                .x = NA, 
-                .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
-              TRUE ~ NA_character_))
+      # Determinar el color de cada celda
+      data_df <- data_df %>%
+        dplyr::mutate(
+          c_color = dplyr::case_when(
+            category == 'below' ~ purrr::map_chr(
+              .x = prob_below, 
+              .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_below, na_color_prob)),
+            category == 'normal' ~ purrr::map_chr(
+              .x = prob_normal, 
+              .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
+            category == 'above' ~ purrr::map_chr(
+              .x = prob_above, 
+              .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_above, na_color_prob)),
+            is.na(category) ~ purrr::map_chr(
+              .x = NA, 
+              .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
+            TRUE ~ NA_character_))
       
-      # Identificar distancia entre puntos de la grilla
-      dist_between_lon <- 
-        abs(sort(unique(data_df$longitude))[1] - 
-              sort(unique(data_df$longitude))[2]) / 2
-      dist_between_lat <- 
-        abs(sort(unique(data_df$longitude))[1] - 
-              sort(unique(data_df$longitude))[2]) / 2
+      # Identificar distancia entre puntos a graficar
+      dist_between_lon <- min(spatial_dist(data_df$longitude)) / 2
+      dist_between_lat <- min(spatial_dist(data_df$latitude)) / 2
+      if (!gridded_data) {
+        dist_between_lon <- ifelse(dist_between_lon > 2, 2, dist_between_lon)
+        dist_between_lat <- ifelse(dist_between_lat > 2, 2, dist_between_lat)
+        circle_radius <- min(c(dist_between_lon, dist_between_lat))
+      }
       
       # Generar el gráfico
       css_fix_1 <- 
@@ -309,26 +362,47 @@ PlotsHelper <- R6::R6Class(
           fillOpacity = 0.0,
           smoothFactor = 0.5,
           color = "#000000") %>%
-        leaflet::addRectangles(
-          map = .,
-          data = data_df,
-          lng1 = ~ longitude - dist_between_lon,
-          lat1 = ~ latitude - dist_between_lat,
-          lng2 = ~ longitude + dist_between_lon,
-          lat2 = ~ latitude + dist_between_lat,
-          stroke = FALSE,
-          fillColor = ~ c_color,
-          fillOpacity = 0.7,
-          popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                               "<center>Prob. Below: {auto_round(prob_below)}</center>",
-                               "<center>Prob. Near: {auto_round(prob_normal)}</center>",
-                               "<center>Prob. Above: {auto_round(prob_above)}</center>"),
-          label = ~ dplyr::case_when(
-            category == 'below' ~ glue::glue("Prob. Below: {auto_round(prob_below)}"),
-            category == 'normal' ~ glue::glue("Prob. Normal: {auto_round(prob_normal)}"),
-            category == 'above' ~ glue::glue("Prob. Above: {auto_round(prob_above)}"),
-            is.na(category) ~ 'Sin datos',
-            TRUE ~ 'Categoría desconocida!')) %>%
+        { if ( gridded_data ) 
+          leaflet::addRectangles(
+            map = .,
+            data = data_df,
+            lng1 = ~ longitude - dist_between_lon,
+            lat1 = ~ latitude - dist_between_lat,
+            lng2 = ~ longitude + dist_between_lon,
+            lat2 = ~ latitude + dist_between_lat,
+            stroke = FALSE,
+            fillColor = ~ c_color,
+            fillOpacity = 0.7,
+            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
+                                 "<center>Prob. Below: {auto_round(prob_below)}</center>",
+                                 "<center>Prob. Near: {auto_round(prob_normal)}</center>",
+                                 "<center>Prob. Above: {auto_round(prob_above)}</center>"),
+            label = ~ dplyr::case_when(
+              category == 'below' ~ glue::glue("Prob. Below: {auto_round(prob_below)}"),
+              category == 'normal' ~ glue::glue("Prob. Normal: {auto_round(prob_normal)}"),
+              category == 'above' ~ glue::glue("Prob. Above: {auto_round(prob_above)}"),
+              is.na(category) ~ 'Sin datos',
+              TRUE ~ 'Categoría desconocida!'))
+          else . } %>%
+        { if ( !gridded_data ) 
+          leaflet::addCircleMarkers(
+            map = .,
+            data = data_df,
+            radius = circle_radius,
+            stroke = FALSE,
+            fillColor = ~ c_color,
+            fillOpacity = 0.7,
+            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
+                                 "<center>Prob. Below: {auto_round(prob_below)}</center>",
+                                 "<center>Prob. Near: {auto_round(prob_normal)}</center>",
+                                 "<center>Prob. Above: {auto_round(prob_above)}</center>"),
+            label = ~ dplyr::case_when(
+              category == 'below' ~ glue::glue("Prob. Below: {auto_round(prob_below)}"),
+              category == 'normal' ~ glue::glue("Prob. Normal: {auto_round(prob_normal)}"),
+              category == 'above' ~ glue::glue("Prob. Above: {auto_round(prob_above)}"),
+              is.na(category) ~ 'Sin datos',
+              TRUE ~ 'Categoría desconocida!'))
+          else . } %>%
         leaflet::addLegend(
           map = .,
           position = "bottomright",
@@ -446,6 +520,8 @@ PlotsHelper <- R6::R6Class(
       return ( main_title )
       
     }
+  ),
+  private = list(
   ),
   lock_objects = TRUE,
   portable = TRUE,

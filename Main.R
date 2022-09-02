@@ -226,6 +226,7 @@ for ( i in 1:nrow(base_files) ) {
   # Crear gráfico
   coor_plot <- PlotsHelper$graficar_mapa(
     data_df = corr_df, 
+    gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
     main_title = PlotsHelper$definir_titulo("corr", base_file), 
     legend_title = "Correlation", 
     spatial_domain = list(
@@ -238,7 +239,7 @@ for ( i in 1:nrow(base_files) ) {
       base_file$basename, "_corr.html"),
     breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
     colors = paleta_completa, 
-    save_map = T)
+    save_map = TRUE)
   
   
   #
@@ -255,6 +256,18 @@ for ( i in 1:nrow(base_files) ) {
     #
     
     logger::log_info(glue::glue("Inicia el graficado de las Anomalías para el año: {data_year}"))
+    
+    # Determinar si los datos forman una grilla regular. Esto se debe
+    # hacer antes de exluir puntos fuera del crcsas, en realidad, antes
+    # de excluir cualquier punto en los datos.
+    det_gridded_data <- are_points_gridded(
+      points_df = datos_entrada$pred_det_fcst_data$data %>%
+        dplyr::filter(year == data_year) %>%
+        dplyr::select(longitude, latitude))
+    prob_gridded_data <- are_points_gridded(
+      points_df = datos_entrada$pred_prob_fcst_data$data %>%
+        dplyr::filter(year == data_year) %>%
+        dplyr::select(longitude, latitude))
     
     # Definir df con los datos a graficar
     anom_df <- datos_entrada$pred_det_fcst_data$data %>%
@@ -284,6 +297,7 @@ for ( i in 1:nrow(base_files) ) {
     # Crear gráfico
     anom_plot <- PlotsHelper$graficar_mapa(
       data_df = anom_df, 
+      gridded_data = det_gridded_data,
       main_title = PlotsHelper$definir_titulo("anom", base_file, data_year), 
       legend_title = legend_title, 
       spatial_domain = list(
@@ -296,7 +310,7 @@ for ( i in 1:nrow(base_files) ) {
         base_file$basename, "_anom.html"),
       breaks = breaks,
       colors = paleta_completa, 
-      save_map = T)
+      save_map = TRUE)
     
     
     #
@@ -334,6 +348,7 @@ for ( i in 1:nrow(base_files) ) {
     # Crear gráfico
     det_fcst_plot <- PlotsHelper$graficar_mapa(
       data_df = det_fcst_df, 
+      gridded_data = det_gridded_data,
       main_title = PlotsHelper$definir_titulo("det.fcst", base_file, data_year), 
       legend_title = legend_title, 
       spatial_domain = list(
@@ -346,7 +361,7 @@ for ( i in 1:nrow(base_files) ) {
         base_file$basename, "_det_fcst.html"),
       breaks = breaks,
       colors = paleta_completa, 
-      save_map = T)
+      save_map = TRUE)
   
   
     #
@@ -381,6 +396,7 @@ for ( i in 1:nrow(base_files) ) {
     # Crear gráfico
     prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
       data_df = prob_fcst_df, 
+      gridded_data = prob_gridded_data,
       main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, data_year), 
       spatial_domain = list(
         nla = max(prob_fcst_df$latitude),
@@ -394,7 +410,7 @@ for ( i in 1:nrow(base_files) ) {
       colors_below = paleta_below, 
       colors_normal = paleta_normal, 
       colors_above = paleta_above, 
-      save_map = T)
+      save_map = TRUE)
     
     
     #
@@ -404,6 +420,14 @@ for ( i in 1:nrow(base_files) ) {
     if ( !is.null(datos_entrada$uncalibrated_fcst_data) ) {
       
       logger::log_info(glue::glue("Inicia el graficado del Pronóstico sin Calibrar para el año: {data_year}"))
+      
+      # Determinar si los datos forman una grilla regular. Esto se debe
+      # hacer antes de exluir puntos fuera del crcsas, en realidad, antes
+      # de excluir cualquier punto en los datos.
+      uncal_gridded_data <- are_points_gridded(
+        points_df = datos_entrada$uncalibrated_fcst_data$data %>%
+          dplyr::filter(year == data_year) %>%
+          dplyr::select(longitude, latitude))
       
       # Definir df con los datos a graficar
       uncal_fcst_df <- datos_entrada$uncalibrated_fcst_data$data %>%
@@ -434,6 +458,7 @@ for ( i in 1:nrow(base_files) ) {
       # Crear gráfico
       uncal_fcst_plot <- PlotsHelper$graficar_mapa(
         data_df = uncal_fcst_df, 
+        gridded_data = uncal_gridded_data,
         main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, data_year), 
         legend_title = legend_title, 
         spatial_domain = list(
@@ -446,7 +471,7 @@ for ( i in 1:nrow(base_files) ) {
           base_file$basename, "_uncal_fcst.html"),
         breaks = breaks,
         colors = paleta_completa, 
-        save_map = T)
+        save_map = TRUE)
       
     }  # FIN DEL IF: if ( !is.null(datos_entrada$uncalibrated_fcst_data) )
   
