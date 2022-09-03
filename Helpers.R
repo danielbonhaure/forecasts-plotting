@@ -55,6 +55,7 @@ logger::log_info('Finaliza operación sf::st_buffer sobre el shp del CRC-SAS')
 # Color para NA en mapas
 na_color <- "#5C5C5C"
 na_color_prob <- "#8eb148"
+mask_color <- "#f2c0fe"
 
 # Determinar el mejor valor para el parámetro digits de la función round
 round_digits <- function(valor) {
@@ -199,7 +200,7 @@ PlotsHelper <- R6::R6Class(
                              main_title, legend_title, 
                              output_file_abspath, 
                              breaks = NULL, colors = NULL, 
-                             save_map = T) {
+                             dry_mask_df, save_map = T) {
       
       # Establecer breaks y color por defecto (siempre debe haber un color más que breaks)
       if ( is.null(breaks) && is.null(colors) ) {
@@ -220,6 +221,16 @@ PlotsHelper <- R6::R6Class(
         dplyr::mutate(
           c_color = purrr::map_chr(
             value, ~ get_value_color(.x, breaks, colors, na_color)) )
+      
+      # Enmascarar con máscara seca si corresponde
+      if ( !is.null(dry_mask_df) ) {
+        data_df <- data_df %>%
+          dplyr::left_join(
+            dry_mask_df, by = c("longitude", "latitude")) %>%
+          dplyr::mutate(
+            c_color = ifelse(must_be_masked, mask_color, c_color)) %>%
+          dplyr::select(-must_be_masked)
+      }
       
       # Identificar distancia entre puntos a graficar
       dist_between_lon <- min(spatial_dist(data_df$longitude)) / 2
@@ -298,13 +309,17 @@ PlotsHelper <- R6::R6Class(
             glue::glue('conic-gradient(at 50% 100%, ',
                        '{colors[length(colors)]} 45deg, transparent 0, ',
                        'transparent 315deg, {colors[length(colors)]} 0)'),
-            glue::glue('{na_color};border-radius: 25px;margin-top:3px;')),
+            purrr::map_chr(
+              .x = if (!is.null(dry_mask_df)) c(na_color, mask_color) else na_color, 
+              .f = ~ glue::glue('{.x};border-radius: 25px;margin-top:3px;'))),
           labels = c(
             "<i style='opacity: .9;'></i>", 
             purrr::map_chr(
               .x = breaks, 
               .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-            "<i style='opacity: .9;'>NaN</i>"),
+            purrr::map_chr(
+              .x = if (!is.null(dry_mask_df)) c("NaN", "D.M.") else "NaN", 
+              .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
           className = "info legend principal",
           opacity = 0.9) %>%
@@ -339,7 +354,7 @@ PlotsHelper <- R6::R6Class(
                                   main_title, output_file_abspath, 
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
-                                  save_map = T) {
+                                  dry_mask_df, save_map = T) {
         
       # Determinar el color de cada celda
       data_df <- data_df %>%
@@ -358,6 +373,16 @@ PlotsHelper <- R6::R6Class(
               .x = NA, 
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
             TRUE ~ NA_character_))
+      
+      # Enmascarar con máscara seca si corresponde
+      if ( !is.null(dry_mask_df) ) {
+        data_df <- data_df %>%
+          dplyr::left_join(
+            dry_mask_df, by = c("longitude", "latitude")) %>%
+          dplyr::mutate(
+            c_color = ifelse(must_be_masked, mask_color, c_color)) %>%
+          dplyr::select(-must_be_masked)
+      }
       
       # Identificar distancia entre puntos a graficar
       dist_between_lon <- min(spatial_dist(data_df$longitude)) / 2
@@ -453,14 +478,24 @@ PlotsHelper <- R6::R6Class(
                      '#FFFFFF;visibility: hidden;',
                      colors_above,
                      '#FFFFFF;visibility: hidden;',
-                     glue::glue('{na_color_prob};border-radius: 25px;margin-top:3px;')),
+                     purrr::map_chr(
+                       .x = if (!is.null(dry_mask_df)) c(na_color, mask_color) else na_color, 
+                       .f = ~ glue::glue('{.x};border-radius: 25px;margin-top:3px;'))),
           labels = c("<b style='margin-left:-20px'> Below Normal </b>", "",
-                     purrr::map_chr(.x = breaks, .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                     purrr::map_chr(
+                       .x = breaks, 
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
                      "<b style='margin-left:-20px'> Near Normal </b>", "",
-                     purrr::map_chr(.x = breaks, .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                     purrr::map_chr(
+                       .x = breaks, 
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
                      "<b style='margin-left:-20px'> Above Normal </b>", "",
-                     purrr::map_chr(.x = breaks, .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-                     "<i style='opacity: .9;'>NaN</i>"),
+                     purrr::map_chr(
+                       .x = breaks, 
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                     purrr::map_chr(
+                       .x = if (!is.null(dry_mask_df)) c("NaN", "DryM.") else "NaN", 
+                       .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
           className = "info legend principal",
           opacity = 0.9) %>%
         leaflet::addControl(

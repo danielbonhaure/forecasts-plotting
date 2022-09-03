@@ -199,6 +199,55 @@ for ( i in 1:nrow(base_files) ) {
   logger::log_info('Finaliza lectura de archivos de entrada')
   
   
+  #
+  # Preparar máscara seca para ser aplicada antes de graficar
+  #
+  
+  
+  # Se setea esta variable a NULL porque se pasa siempre
+  # a la función que grafica, pero, la idea que cuando
+  # sea NULL, no se aplique ninguna máscara.
+  dry_mask_trgt_months <- NULL
+  
+  
+  # Definir máscara cuando corresponda
+  if ( base_file$type == 'ereg' && config_ereg$apply_dry_mask ) {
+    
+    # Leer archivo con mascara seca para EREG
+    dry_mask_df = tidync::tidync(config_ereg$dry_mask_file) %>% 
+      tidync::hyper_tibble(na.rm = FALSE) %>%
+      dplyr::rename(
+        longitude = X, latitude = Y) %>%
+      dplyr::mutate(
+        longitude = longitude - 360,
+        dry_month = as.logical(prec),
+        must_be_masked = dry_month) %>%
+      dplyr::select(
+        longitude, latitude, month, must_be_masked)
+    
+    # Recorrer el/los meses objetivo (target month) y marcar punto
+    # como "a ser enmscarado" cuando al menos uno de los meses sea seco.
+    dry_mask_trgt_months <- 
+      purrr::reduce(
+        .x = purrr::map(
+          .x = stringr::str_split(base_file$target_months, '-') %>% 
+            purrr::reduce(c),
+          .f = function(m) {
+            dry_mask_df %>% 
+              dplyr::filter(month == m) %>%
+              dplyr::rename(!!paste0('must_be_masked.', m) := must_be_masked) %>%
+              dplyr::select(-month)
+          }),
+        .f = dplyr::inner_join,
+        by = c("longitude", "latitude")) %>%
+      dplyr::mutate(
+        must_be_masked = if_any(dplyr::starts_with("must_be_masked."))) %>%
+      dplyr::select(longitude, latitude, must_be_masked)
+    
+    
+  }
+  
+  
   # 
   # Crear gráfico de correlación
   #
@@ -247,6 +296,7 @@ for ( i in 1:nrow(base_files) ) {
       base_file$basename, "_corr.html"),
     breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
     colors = paleta_completa, 
+    dry_mask_df = dry_mask_trgt_months,
     save_map = TRUE)
   
   
@@ -326,6 +376,7 @@ for ( i in 1:nrow(base_files) ) {
         base_file$basename, "_anom.html"),
       breaks = breaks,
       colors = paleta_completa, 
+      dry_mask_df = dry_mask_trgt_months,
       save_map = TRUE)
     
     
@@ -385,6 +436,7 @@ for ( i in 1:nrow(base_files) ) {
         base_file$basename, "_det_fcst.html"),
       breaks = breaks,
       colors = paleta_completa, 
+      dry_mask_df = dry_mask_trgt_months,
       save_map = TRUE)
   
   
@@ -447,6 +499,7 @@ for ( i in 1:nrow(base_files) ) {
       colors_below = paleta_below, 
       colors_normal = paleta_normal, 
       colors_above = paleta_above, 
+      dry_mask_df = dry_mask_trgt_months,
       save_map = TRUE)
     
     
@@ -508,6 +561,7 @@ for ( i in 1:nrow(base_files) ) {
           base_file$basename, "_uncal_fcst.html"),
         breaks = breaks,
         colors = paleta_completa, 
+        dry_mask_df = dry_mask_trgt_months,
         save_map = TRUE)
       
     }  # FIN DEL IF: if ( !is.null(datos_entrada$uncalibrated_fcst_data) )

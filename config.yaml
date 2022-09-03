@@ -47,4 +47,5 @@ ereg:
       hindcasts: "/data/ereg/generados/nmme_output/comb_forecasts"
   output_folder: "/data/ereg/generados/nmme_figuras/web-crc-sas"
   suavizar_graficos: TRUE
-  aplicar_mascara: TRUE
+  dry_mask_file: "/data/ereg/descargas/NMME/dry_mask.nc"
+  apply_dry_mask: TRUE
