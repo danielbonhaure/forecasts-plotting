@@ -215,6 +215,14 @@ for ( i in 1:nrow(base_files) ) {
       higher_training_year = base_file$hcst_last_year) %>% 
     dplyr::select(
       longitude, latitude, value = corr) %>%
+    exclude_points_outside_buffered_crcsas() %>%
+    { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+      PlotsHelper$aplicar_suavizado(
+        data_df = .,
+        cols_to_interp = "value",
+        delta = ifelse(base_file$type == "ereg", .5, .25),
+        inplace = ifelse(base_file$type == "ereg", T, F))
+      else . } %>%
     exclude_points_outside_crcsas()
   
   # Definir paleta de colores
@@ -224,7 +232,7 @@ for ( i in 1:nrow(base_files) ) {
   paleta_completa <- c(red_plt, "#f1f1f1", blue_plt)
   
   # Crear gráfico
-  coor_plot <- PlotsHelper$graficar_mapa(
+  corr_plot <- PlotsHelper$graficar_mapa(
     data_df = corr_df, 
     gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
     main_title = PlotsHelper$definir_titulo("corr", base_file), 
@@ -275,6 +283,14 @@ for ( i in 1:nrow(base_files) ) {
         year == data_year) %>%
       dplyr::select(
         longitude, latitude, value = anomaly) %>%
+      exclude_points_outside_buffered_crcsas() %>%
+      { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+        PlotsHelper$aplicar_suavizado(
+          data_df = .,
+          cols_to_interp = "value",
+          delta = ifelse(base_file$type == "ereg", .5, .25),
+          inplace = ifelse(base_file$type == "ereg", T, F))
+        else . } %>%
       exclude_points_outside_crcsas()
     
     # Definir paleta de colores
@@ -325,6 +341,14 @@ for ( i in 1:nrow(base_files) ) {
         year == data_year) %>%
       dplyr::select(
         longitude, latitude, value = !!rlang::sym(base_file$variable)) %>%
+      exclude_points_outside_buffered_crcsas() %>%
+      { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+        PlotsHelper$aplicar_suavizado(
+          data_df = .,
+          cols_to_interp = "value",
+          delta = ifelse(base_file$type == "ereg", .5, .25),
+          inplace = ifelse(base_file$type == "ereg", T, F))
+        else . } %>%
       exclude_points_outside_crcsas()
     
     # Obtener la cantidad de meses objetivo (3 para seasonal y 1 para monthly)
@@ -380,7 +404,20 @@ for ( i in 1:nrow(base_files) ) {
         prob_above = paste0('prob_', base_file$variable, '_above')) %>%
       dplyr::select(
         -init_time, -year, -month) %>%
-      exclude_points_outside_crcsas()
+      exclude_points_outside_buffered_crcsas() %>%
+      { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+        PlotsHelper$aplicar_suavizado(
+          data_df = .,
+          cols_to_interp = c("prob_below", "prob_normal", "prob_above"),
+          delta = ifelse(base_file$type == "ereg", .5, .25),
+          inplace = ifelse(base_file$type == "ereg", T, F))
+        else . } %>%
+      exclude_points_outside_crcsas() %>%
+      FcstProbabilisticData$add_categories(
+        prob_data_df = prob_fcst_df, 
+        below_col = "prob_below", 
+        normal_col = "prob_normal", 
+        above_col = "prob_above")
     
     # Definir paleta de colores de la NOAA
     # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps

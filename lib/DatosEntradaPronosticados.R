@@ -674,50 +674,60 @@ FcstProbabilisticData <- R6::R6Class(
       self$data
     },
     
-    add_categories = function() {
-      # Definir la categoría de cada fila en self$data
-      self$data <- self$data %>%
+    add_categories = function(prob_data_df = NULL, 
+                              below_col = NULL,
+                              normal_col = NULL, 
+                              above_col = NULL) {
+      # Algunas veces se ejcuta esté método como método de clase
+      if ( is.null(prob_data_df) ) {
+        prob_data_df <- self$data
+        below_col <- private$pv_below_col
+        normal_col <- private$pv_normal_col
+        above_col <- private$pv_above_col
+      }
+      # Definir la categoría de cada fila en prob_data_df
+      prob_data_df <- prob_data_df %>%
         dplyr::mutate(category = dplyr::case_when(
-          (!!as.name(private$pv_above_col) > 
-             !!as.name(private$pv_normal_col) & 
-             !!as.name(private$pv_above_col) > 
-             !!as.name(private$pv_below_col)) ~ "above",
-          (!!as.name(private$pv_normal_col) > 
-             !!as.name(private$pv_above_col) & 
-             !!as.name(private$pv_normal_col) > 
-             !!as.name(private$pv_below_col)) ~ "normal",
-          (!!as.name(private$pv_below_col) > 
-             !!as.name(private$pv_normal_col) & 
-             !!as.name(private$pv_below_col) > 
-             !!as.name(private$pv_above_col)) ~ "below",
-          ((!!as.name(private$pv_normal_col) > 
-             !!as.name(private$pv_above_col) & 
-             !!as.name(private$pv_normal_col) == 
-             !!as.name(private$pv_below_col)) | 
-           (!!as.name(private$pv_normal_col) == 
-             !!as.name(private$pv_above_col) & 
-             !!as.name(private$pv_normal_col) > 
-             !!as.name(private$pv_below_col)) |
-           (!!as.name(private$pv_normal_col) == 
-             !!as.name(private$pv_above_col) & 
-             !!as.name(private$pv_normal_col) ==
-             !!as.name(private$pv_below_col))) ~ "normal",
-          (!!as.name(private$pv_below_col) > 
-             !!as.name(private$pv_normal_col) & 
-             !!as.name(private$pv_below_col) == 
-             !!as.name(private$pv_above_col)) ~ NA_character_,
+          (!!as.name(above_col) > 
+             !!as.name(normal_col) & 
+             !!as.name(above_col) > 
+             !!as.name(below_col)) ~ "above",
+          (!!as.name(normal_col) > 
+             !!as.name(above_col) & 
+             !!as.name(normal_col) > 
+             !!as.name(below_col)) ~ "normal",
+          (!!as.name(below_col) > 
+             !!as.name(normal_col) & 
+             !!as.name(below_col) > 
+             !!as.name(above_col)) ~ "below",
+          ((!!as.name(normal_col) > 
+             !!as.name(above_col) & 
+             !!as.name(normal_col) == 
+             !!as.name(below_col)) | 
+           (!!as.name(normal_col) == 
+             !!as.name(above_col) & 
+             !!as.name(normal_col) > 
+             !!as.name(below_col)) |
+           (!!as.name(normal_col) == 
+             !!as.name(above_col) & 
+             !!as.name(normal_col) ==
+             !!as.name(below_col))) ~ "normal",
+          (!!as.name(below_col) > 
+             !!as.name(normal_col) & 
+             !!as.name(below_col) == 
+             !!as.name(above_col)) ~ NA_character_,
           TRUE ~ NA_character_
         )) %>%
         dplyr::mutate(
           category = factor(category, levels = c("below", "normal", "above"))
         )
       # Reportar casos en los que no se pudo determinar la categoría
-      casos_con_below_y_above_superiores <- self$data %>% 
+      casos_con_below_y_above_superiores <- prob_data_df %>% 
         dplyr::mutate(category = dplyr::case_when(
-          (!!as.name(private$pv_below_col) > 
-             !!as.name(private$pv_normal_col) & 
-             !!as.name(private$pv_below_col) == 
-             !!as.name(private$pv_above_col)) ~ 1,
+          (!!as.name(below_col) > 
+             !!as.name(normal_col) & 
+             !!as.name(below_col) == 
+             !!as.name(above_col)) ~ 1,
           TRUE ~ 0
         )) %>% dplyr::pull(category) %>% sum()
       if ( casos_con_below_y_above_superiores > 0 )
@@ -725,8 +735,13 @@ FcstProbabilisticData <- R6::R6Class(
                 "con mayor probabilidad de ocurrencia y, por lo tanto, ",
                 "no fue posible determinar la categoría para el evento.")
       
-      # Como R siempre retorna algo, por último se deja self$data
-      self$data
+      # Asignar valor a self$data solo si prob_data_df es NULL
+      if ( is.null(prob_data_df) ) {
+        self$data <- prob_data_df
+      }
+      
+      # Retornar resultado
+      return ( prob_data_df )
     }
   ),
   private = list(
@@ -864,6 +879,10 @@ FcstProbabilisticData <- R6::R6Class(
   portable = TRUE,
   lock_class = TRUE
 )
+# Declare class methods
+FcstProbabilisticData$add_categories = function(...) {
+  FcstProbabilisticData$public_methods$add_categories(...)
+}
 
 # CONCRETE PROBABILISTC PRODUCT FOR TEMPERATURE
 FcstTempProbabilisticData <- R6::R6Class(

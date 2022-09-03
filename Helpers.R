@@ -35,6 +35,17 @@ global_img_folder <- global_config$get_config('global_folders')$images
 crcsas_sf <- sf::st_read(paste0(global_shp_folder, "/CRC_SAS.shp"), quiet = TRUE)
 paises_sf <- sf::st_read(paste0(global_shp_folder, "/10m_admin_0_countries.shp"), quiet = TRUE)
 
+# Se crea un polígono con buffer para el CRC-SAS.
+# Se crea aquí porque es una operación lenta.
+# La distancia (parámetro dist) del buffer está en metros.
+# 300km son más o menos 2 grados de lat y lon.
+logger::log_info('Inicia operación sf::st_buffer sobre el shp del CRC-SAS')
+buffered_crcsas_sf <- crcsas_sf %>%
+  sf::st_transform(crs = 3857) %>%
+  sf::st_buffer(dist = 300000) %>%
+  sf::st_transform(crs = 4326)
+logger::log_info('Finaliza operación sf::st_buffer sobre el shp del CRC-SAS')
+
 
 #
 #
@@ -69,16 +80,40 @@ auto_round <- function(valores) {
     })
 }
 
-# Excluir puntos que no están dentro del polígono del CRC-SAS
-exclude_points_outside_crcsas <- function(a_dataframe) {
-  a_dataframe %>%
+# Excluir puntos que están fuera del polígono
+exclude_points_outside_polygon <- function(a_tibble_df, polygon_sf, 
+                                           dist_buffer=NULL) {
+  buffered_polygon <- polygon_sf %>%
+    sf::st_transform(crs = 3857) %>%
+    { if ( !is.null(dist_buffer) )
+      sf::st_buffer(., dist = dist_buffer)
+      else . }
+  
+  filtered_df <- a_tibble_df %>%
+    dplyr::filter(latitude <= 0) %>%
     sf::st_as_sf(
       coords = c("longitude", "latitude"), 
       remove = FALSE, crs = 4326) %>%
     sf::st_transform(crs = 3857) %>%
-    sf::st_filter(
-      sf::st_transform(crcsas_sf, crs = 3857)) %>%
+    sf::st_filter(buffered_polygon) %>%
     sf::st_drop_geometry()
+  
+  return ( filtered_df )
+}
+
+# Excluir puntos que no están sobre tierra, sino en el océano
+exclude_points_outside_land <- function(a_tibble_df, dist_buffer=NULL) {
+  return ( exclude_points_outside_polygon(a_tibble_df, paises_sf, dist_buffer) )
+}
+
+# Excluir puntos que no están dentro del polígono del CRC-SAS
+exclude_points_outside_crcsas <- function(a_tibble_df, dist_buffer=NULL) {
+  return ( exclude_points_outside_polygon(a_tibble_df, crcsas_sf, dist_buffer) )
+}
+
+# Excluir puntos que no están dentro del polígono del CRC-SAS extendido
+exclude_points_outside_buffered_crcsas <- function(a_tibble_df, dist_buffer=NULL) {
+  return ( exclude_points_outside_polygon(a_tibble_df, buffered_crcsas_sf, dist_buffer) )
 }
 
 # Determinar el color asociado a un valor
@@ -455,6 +490,148 @@ PlotsHelper <- R6::R6Class(
       # Retornar mapa (para pruebas)
       return ( m )
     },
+    aplicar_suavizado = function(data_df, cols_to_interp, delta, inplace) {
+      ##### Kriging  
+      
+      # El método Kriging es un poco más complicado que el IDW, ya que requiere 
+      # la construcción de un modelo de semivariograma para describir el patrón 
+      # de autocorrelación espacial de los datos. En este caso no le remuevo la 
+      # tendencia a los datos. En este enlace hacen algo similar pero removiéndole 
+      # la tendencia: https://mgimond.github.io/Spatial/interpolation-in-r.html
+      
+      # Me aseguro que data_df sea un tibble
+      data_df <- tibble::as_tibble(data_df)
+      
+      # Se mueven los puntos antes de crear la grilla, así cuando se
+      # crea la grilla los nuevos puntos están donde estaban en un 
+      # principio los originales, dando la impresión de que luego de 
+      # la interpolación los puntos no se movieron.
+      if (inplace) {
+        data_df <- data_df %>%
+          dplyr::mutate(
+            longitude = longitude - delta,
+            latitude = latitude - delta)
+      }
+      
+      # Crear grilla nueva. Los puntos de la grilla nueva no pueden coincidir
+      # con los puntos de la grilla original, porque si coinciden la 
+      # interpolación no producen ningún cambio en los gráficos.
+      if ( global_config$get_config("unify_grid") ) {
+        spatial_domain <- global_config$get_config("spatial_domain")
+        grid_resolution <- global_config$get_config("unify_grid_resolution")
+        new_grid_sf <- tibble::as_tibble(
+          expand.grid(longitude = seq(from = spatial_domain$wlo, 
+                                      to = spatial_domain$elo, 
+                                      by = grid_resolution), 
+                      latitude = seq(from = spatial_domain$sla, 
+                                     to = spatial_domain$nla, 
+                                     by = grid_resolution))) %>%
+          sf::st_as_sf(coords = c("longitude", "latitude"), 
+                       remove = FALSE, crs = 4326)
+      } else {
+        new_grid_sf <- tibble::as_tibble(
+          expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
+                                      to = max(data_df$longitude) + delta, 
+                                      by = delta*2), 
+                      latitude = seq(from = min(data_df$latitude) - delta, 
+                                     to = max(data_df$latitude) + delta, 
+                                     by = delta*2))) %>%
+          sf::st_as_sf(coords = c("longitude", "latitude"), 
+                       remove = FALSE, crs = 4326)
+      }
+      
+      # Se deben eliminar los NA para poder crear los variogramas
+      datos_df <- data_df %>%
+        dplyr::filter(dplyr::across(cols_to_interp, ~ !is.na(.)))
+      
+      # Los variogramas se crean usando objetos sp, para crearlos primero
+      # es necesario crear un objeto sf
+      datos_sf <- sf::st_as_sf(
+        datos_df, coords = c("longitude", "latitude"), 
+        remove = FALSE, crs = 4326) 
+      datos_sp <- as(datos_sf, "Spatial")
+      
+      
+      # Interpolar las variables, una a la vez
+      datos_interp <- 
+        purrr::reduce(
+          .x = purrr::map(
+            .x = if (length(cols_to_interp) > 1) cols_to_interp[!grepl('normal', cols_to_interp)] else cols_to_interp,
+            .f = function(interp_col) {
+              
+              # Define interpolation formula
+              f_left_side <- interp_col
+              f_right_side <- 1  # "longitude + latitude"  # usar "longitude + latitude" para universal kriging
+              interp_formula <- as.formula(paste(f_left_side, "~", f_right_side))
+              
+              # Veo la nube del variograma para los datos. 
+              variogcloud <- gstat::variogram(
+                object = interp_formula, 
+                data = datos_sp, 
+                locations = data_sp, 
+                cloud = TRUE)
+              # plot(variogcloud)
+              
+              # Los valores en la nube se pueden agrupar y trazar con una función muy similar:
+              semivariog <- gstat::variogram(
+                object = interp_formula, 
+                data = datos_sp, 
+                locations = datos_sp)
+              # plot(semivariog)
+              
+              # Calculo el modelo del variograma con la función "autofirVariogram":
+              semivariog_fit <- automap::autofitVariogram(
+                formula = interp_formula, 
+                input_data = datos_sp, 
+                model = "Sph")
+              # Defino el modelo "Sph" (de "spherical") porque así está en el ejemplo. 
+              # Si dejo este parámetro libre el gráfico me queda feo.
+              # plot(semivariog, semivariog_fit$var_model, main = "Fitted variogram")
+              
+              # Se hace la interpolación de Kriging. 
+              # Se usa el modelo de variograma creado en el anterior paso. 
+              # Se usa la función "krige" del paquete "gstat" junto con el modelo de 
+              # semivariograma creado para generar una superficie simple de Kriged.
+              # Se aplica ordinary kriging, ver:
+              # https://swilke-geoscience.net/post/2020-09-10-kriging_with_r/kriging/
+              # Para aplicar simple kriging se debe agregar el parámetro beta
+              # Para aplicar unversal kriging de debe usar "longitude + latitude" en 
+              # lugar de 1 en el lado derecho de la formula.
+              col_datos_interp <- gstat::krige(
+                formula = interp_formula, 
+                #beta = mean(datos_sf %>% dplyr::pull(interp_col)),
+                locations = datos_sp, 
+                newdata = new_grid_sf, 
+                model = semivariog_fit$var_model)
+              
+              # Transformar los datos interpolados (un objeto sf) a un tibble
+              col_datos_interp <- col_datos_interp %>%
+                dplyr::mutate(
+                  longitude = sf::st_coordinates(.)[,1],
+                  latitude = sf::st_coordinates(.)[,2]) %>%
+                sf::st_drop_geometry() %>%
+                dplyr::rename(!!interp_col := var1.pred) %>% 
+                dplyr::select(longitude, latitude, !!interp_col) %>%
+                tibble::as_tibble()
+              
+              # Retornan la interpolación de la columna
+              return (col_datos_interp)
+            }),  # fin del purrr:map
+          .f = dplyr::inner_join,
+          by = c("longitude", "latitude")
+        )  # fin del purrr::reduce
+      
+      # Calcular la probabilidad de above
+      if ( length(cols_to_interp) > 1 )
+        datos_interp <- datos_interp %>%
+          dplyr::mutate(
+            !!cols_to_interp[grepl('normal', cols_to_interp)] := 
+              1 - rowSums(dplyr::across(
+                cols_to_interp[!grepl('normal', cols_to_interp)])))
+      
+      # Retornar resultado
+      return ( datos_interp )
+    },
     definir_titulo = function(data_type, base_file, data_year = NULL) {
       
       variable <- base_file$variable
@@ -533,6 +710,9 @@ PlotsHelper$graficar_mapa = function(...) {
 }
 PlotsHelper$graficar_mapa_prob = function(...) {
   PlotsHelper$public_methods$graficar_mapa_prob(...)
+}
+PlotsHelper$aplicar_suavizado = function(...) {
+  PlotsHelper$public_methods$aplicar_suavizado(...)
 }
 PlotsHelper$definir_titulo = function(...) {
   PlotsHelper$public_methods$definir_titulo(...)
