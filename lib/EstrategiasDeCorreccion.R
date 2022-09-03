@@ -217,7 +217,7 @@ CPTprcpPronoCorrectionStrategy <- R6::R6Class(
     get_correction_ranges = function() {
       agrupar_por <- c(private$pv_lon_col, private$pv_lat_col)
       # Calcular estadísticas sobre de los datos observados
-      sd_obs_data <- private$pv_df_to_get_sd %>%
+      correction_ranges_df <- private$pv_df_to_get_sd %>%
         # como la variable analizada es siempre precipitación, no puede haber
         # valores menores a 0, si los hay, puede que se trate de un error o que 
         # ese valor haya sido utilizado para representar los NA (ej: -999)
@@ -252,7 +252,7 @@ CPTprcpPronoCorrectionStrategy <- R6::R6Class(
                       private$pv_year_col, private$pv_month_col, 
                       point_to_check, min_valid_value, max_valid_value)
       # Se retornan los rangos
-      return ( sd_obs_data )
+      return ( correction_ranges_df )
     }
   ),
   inherit = CorrectionStrategy,
