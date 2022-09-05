@@ -27,13 +27,12 @@ global_config <- Config$new(here::here('config.yaml'))
 # Obtener condiciones inciales
 global_ic <- global_config$get_config('initial_conditions')
 
-# Obtener shapefiles folder
-global_shp_folder <- global_config$get_config('global_folders')$shapefiles
-global_img_folder <- global_config$get_config('global_folders')$images
+# Obtener shapefiles e imágenes
+global_shapefiles <- global_config$get_config('shapefiles')
+global_images <- global_config$get_config('images')
 
 # Leer shapes a ser utlizados en los gráficos
-crcsas_sf <- sf::st_read(paste0(global_shp_folder, "/CRC_SAS.shp"), quiet = TRUE)
-paises_sf <- sf::st_read(paste0(global_shp_folder, "/10m_admin_0_countries.shp"), quiet = TRUE)
+crcsas_sf <- sf::st_read(global_shapefiles$`crc-sas`, quiet = TRUE)
 
 # Se crea un polígono con buffer para el CRC-SAS.
 # Se crea aquí porque es una operación lenta.
@@ -100,11 +99,6 @@ exclude_points_outside_polygon <- function(a_tibble_df, polygon_sf,
     sf::st_drop_geometry()
   
   return ( filtered_df )
-}
-
-# Excluir puntos que no están sobre tierra, sino en el océano
-exclude_points_outside_land <- function(a_tibble_df, dist_buffer=NULL) {
-  return ( exclude_points_outside_polygon(a_tibble_df, paises_sf, dist_buffer) )
 }
 
 # Excluir puntos que no están dentro del polígono del CRC-SAS
@@ -330,7 +324,7 @@ PlotsHelper <- R6::R6Class(
           className="map-title info") %>%
         leaflet::addControl(
           html = GenerarHTMLLogo(
-            paste0(global_img_folder, "/logo-crcsas.png")), 
+            global_images$`crc-sas`), 
           position = "bottomleft") %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(
@@ -505,7 +499,7 @@ PlotsHelper <- R6::R6Class(
           className="map-title info") %>%
         leaflet::addControl(
           html = GenerarHTMLLogo(
-            paste0(global_img_folder, "/logo-crcsas.png")), 
+            global_images$`crc-sas`), 
           position = "bottomleft") %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(

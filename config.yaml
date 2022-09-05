@@ -12,9 +12,11 @@ initial_conditions:
   month: 5
   year: 2022
 
-global_folders:
-  shapefiles: "/data/shapefiles"
-  images: "/data/images"
+shapefiles:
+  crc-sas: "/data/shapefiles/CRC_SAS.shp"
+  
+images: 
+  crc-sas: "/data/images/logo-crcsas.png"
 
 acc-cpt:  
   variables: ["prcp", "t2m"]
