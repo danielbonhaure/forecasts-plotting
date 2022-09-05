@@ -188,16 +188,7 @@ FcstDeterministicData <- R6::R6Class(
       }
       
       # Si las grillas no son iguales, entonces no se puede seguir
-      grilla_self_data <- self$data %>% 
-        dplyr::select(longitude, latitude) %>%
-        dplyr::distinct()
-      grilla_df_mean <- df_to_get_mean %>% 
-        dplyr::select(longitude, latitude) %>%
-        dplyr::distinct()
-      grilla_comun <- grilla_self_data %>% 
-        dplyr::inner_join(grilla_df_mean, by = c("longitude", "latitude"))
-      if ( nrow(grilla_self_data) != nrow(grilla_df_mean) |
-           nrow(grilla_self_data) != nrow(grilla_comun) ) {
+      if ( !are_points_joinables(self$data, df_to_get_mean) ) {
         warning("El df con datos obsevardos y el df con datos ",
                 "pronosticados no tienen la misma grilla")
         return ( invisible(NULL) )
@@ -524,17 +515,7 @@ FcstProbabilisticData <- R6::R6Class(
       }
       
       # Si las grillas no son iguales, entonces no se puede seguir
-      grilla_det_data <- det_data_df %>% 
-        dplyr::select(longitude, latitude) %>%
-        dplyr::distinct()
-      grilla_obs_data <- obs_data_df %>% 
-        dplyr::select(longitude, latitude) %>%
-        dplyr::distinct()
-      grilla_comun <- grilla_det_data %>% 
-        dplyr::inner_join(grilla_obs_data, 
-                          by = c("longitude", "latitude"))
-      if ( nrow(grilla_det_data) != nrow(grilla_obs_data) |
-           nrow(grilla_det_data) != nrow(grilla_comun) ) {
+      if ( !are_points_joinables(det_data_df, obs_data_df) ) {
         warning("El df con datos obsevardos y el df con datos ",
                 "pronosticados no tienen la misma grilla")
         return ( invisible(NULL) )

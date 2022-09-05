@@ -23,6 +23,70 @@ crange <- function(start, stop, modulo) {
 }
 
 
+# Método que permite calcular las distancias entre elementos 
+# adyacentes en un vector de longitudes o latitudes.
+spatial_dist = function(x) {
+  # Primero se ordena el vector de mayor a menor, esto es correcto
+  # porque el vector solo puede tener longitudes o latitudes, y por 
+  # porque el objetivo de la función es calcular distancias entre 
+  # elementos espacialmente adyacentes.
+  x <- sort(unique(x), decreasing = T)
+  
+  # Despues, a partir del vector ordenado, se crean dos vectores.
+  # El 1ero toma desde el 1er elemento del vector hasta el anteúltimo.
+  # El 2do toma desde el 2do elemento del vactor hasta el último.
+  # Con esto se logra que el 1er vector tengo siempre un valor mayor
+  # que el segundo vector. Finalmente, restanto estos dos vectores es
+  # posible obtener la distancia entre elementos consecutivos del
+  # vector recibido como parámetro originalmente.
+  x_dist <- x[seq(1,length(x)-1)] - x[seq(2,length(x)-0)]
+  
+  # Se retornan las diferencias/distancias
+  return ( x_dist )
+}
+
+
+are_points_gridded = function(points_df) {
+  # Definir la diferencias entre las longitudes y latitudes
+  x_diff <- spatial_dist(points_df$longitude)
+  y_diff <- spatial_dist(points_df$latitude)
+  
+  # Determinar si los puntos forman o no una grilla regular
+  return ( min(x_diff) == mean(x_diff) && mean(x_diff) == max(x_diff) && 
+             min(y_diff) == mean(y_diff) && mean(y_diff) == max(y_diff) )
+  
+}
+
+
+are_points_joinables = function(main_df, aux_df) {
+  # Obtener puntos de ambos df
+  coords_main_df <- 
+    main_df %>% 
+      dplyr::select(longitude, latitude) %>%
+      dplyr::distinct()
+  coords_aux_df <- 
+    aux_df %>% 
+      dplyr::select(longitude, latitude) %>%
+      dplyr::distinct()
+  
+  # Unir los puntos cuando lon y lat coincidan
+  common_coords <- 
+    dplyr::inner_join(coords_main_df, coords_aux_df, 
+                      by = c("longitude", "latitude"))
+  
+  # Si el número de coordenadas comunes difiere del número
+  # de coordenadas en el df principal "main_df" entonces se 
+  # concidera que los dfs no son compatibles.
+  if ( nrow(coords_main_df) != nrow(common_coords) ) {
+    return ( FALSE )
+  }
+  
+  # Si en este punto no se detectó ninguna incopatiblidad
+  # entonces se concsidera que los dfs son compatibles.
+  return ( TRUE )
+}
+
+
 #
 #
 #

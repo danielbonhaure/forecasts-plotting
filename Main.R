@@ -266,7 +266,7 @@ for ( i in 1:nrow(base_files) ) {
       longitude, latitude, value = corr) %>%
     exclude_points_outside_buffered_crcsas() %>%
     { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-      PlotsHelper$aplicar_suavizado(
+      InterpolationHelper$interp_kriging(
         data_df = .,
         cols_to_interp = "value",
         delta = ifelse(base_file$type == "ereg", .5, .25),
