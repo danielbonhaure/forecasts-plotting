@@ -77,6 +77,9 @@ config_cpt <- global_config$get_config('acc-cpt')
 # Obtener configuración para pronos EREG
 config_ereg <- global_config$get_config('ereg')
 
+# Obtener el dominio espacial de los gráficos
+spatial_domain <- global_config$get_config("spatial_domain")
+
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
@@ -200,6 +203,44 @@ for ( i in 1:nrow(base_files) ) {
   
   
   #
+  # Definir la grilla a ser utilizada para lel suaviado de los gráficos
+  #
+  
+  
+  # Crear grilla nueva. Los puntos de la grilla nueva no pueden coincidir
+  # con los puntos de la grilla original, porque si coinciden la 
+  # interpolación no produce ningún cambio en los gráficos.
+  if ( global_config$get_config("unify_grid") ) {
+    
+    grid_resolution <- global_config$get_config("unify_grid_resolution")
+    
+    new_grid_sf <- tibble::as_tibble(
+      expand.grid(longitude = seq(from = spatial_domain$wlo, 
+                                  to = spatial_domain$elo, 
+                                  by = grid_resolution), 
+                  latitude = seq(from = spatial_domain$sla, 
+                                 to = spatial_domain$nla, 
+                                 by = grid_resolution))) %>%
+      sf::st_as_sf(coords = c("longitude", "latitude"), 
+                   remove = FALSE, crs = 4326)
+  } else {
+    
+    delta <- ifelse(base_file$type == "ereg", .5, .25)
+    data_df <- datos_entrada$pred_det_fcst_data$data
+    
+    new_grid_sf <- tibble::as_tibble(
+      expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
+                                  to = max(data_df$longitude) + delta, 
+                                  by = delta*2), 
+                  latitude = seq(from = min(data_df$latitude) - delta, 
+                                 to = max(data_df$latitude) + delta, 
+                                 by = delta*2))) %>%
+      sf::st_as_sf(coords = c("longitude", "latitude"), 
+                   remove = FALSE, crs = 4326)
+  }
+  
+  
+  #
   # Preparar máscara seca para ser aplicada antes de graficar
   #
   
@@ -248,19 +289,15 @@ for ( i in 1:nrow(base_files) ) {
     
     # Si la grilla de la máscara no coincide con la grilla de los datos
     # pronosticados, entonces se debe interpolar la máscara.
-    if ( !are_points_joinables(datos_entrada$pred_det_fcst_data$data, 
-                               dry_mask_trgt_months) ) {
+    if ( !are_points_joinables(new_grid_sf, dry_mask_trgt_months) ) {
       logger::log_info('Inicia interpolación de la máscara')
-      
-      # Obtener dominio espacial
-      dominio_espacial <- global_config$get_config('spatial_domain')
       
       # Reducir cantidad de puntos, excluir puntos fuera del dominio espacial
       dry_mask_trgt_months <- dry_mask_trgt_months %>%
-        dplyr::filter(longitude >= dominio_espacial$wlo - 2, 
-                      longitude <= dominio_espacial$elo + 2, 
-                      latitude <= dominio_espacial$nla + 2, 
-                      latitude >= dominio_espacial$sla - 2)
+        dplyr::filter(longitude >= spatial_domain$wlo - 2, 
+                      longitude <= spatial_domain$elo + 2, 
+                      latitude <= spatial_domain$nla + 2, 
+                      latitude >= spatial_domain$sla - 2)
       reduced_orig_dry_mask <- dry_mask_trgt_months %>% sf::st_as_sf(
         coords = c("longitude", "latitude"), 
         remove = FALSE, crs = 4326) 
@@ -291,8 +328,8 @@ for ( i in 1:nrow(base_files) ) {
           new_points = new_grid_sf) %>%
         dplyr::mutate(
           must_be_masked = dplyr::case_when(
-            must_be_masked <= 0 ~ as.logical(0),
-            must_be_masked > 0 ~ as.logical(1),
+            must_be_masked < .5 ~ as.logical(0),
+            must_be_masked >= .5 ~ as.logical(1),
             TRUE ~ NA
           )) %>%
         exclude_points_outside_buffered_crcsas()
@@ -321,10 +358,7 @@ for ( i in 1:nrow(base_files) ) {
     exclude_points_outside_buffered_crcsas() %>%
     { if ( global_config$get_config(base_file$type)$suavizar_graficos )
       InterpolationHelper$interp_kriging(
-        data_df = .,
-        cols_to_interp = "value",
-        delta = ifelse(base_file$type == "ereg", .5, .25),
-        inplace = ifelse(base_file$type == "ereg", T, F))
+        data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
       else . } %>%
     exclude_points_outside_crcsas()
   
@@ -389,11 +423,8 @@ for ( i in 1:nrow(base_files) ) {
         longitude, latitude, value = anomaly) %>%
       exclude_points_outside_buffered_crcsas() %>%
       { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        PlotsHelper$aplicar_suavizado(
-          data_df = .,
-          cols_to_interp = "value",
-          delta = ifelse(base_file$type == "ereg", .5, .25),
-          inplace = ifelse(base_file$type == "ereg", T, F))
+        InterpolationHelper$interp_kriging(
+          data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
         else . } %>%
       exclude_points_outside_crcsas()
     
@@ -448,11 +479,8 @@ for ( i in 1:nrow(base_files) ) {
         longitude, latitude, value = !!rlang::sym(base_file$variable)) %>%
       exclude_points_outside_buffered_crcsas() %>%
       { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        PlotsHelper$aplicar_suavizado(
-          data_df = .,
-          cols_to_interp = "value",
-          delta = ifelse(base_file$type == "ereg", .5, .25),
-          inplace = ifelse(base_file$type == "ereg", T, F))
+        InterpolationHelper$interp_kriging(
+          data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
         else . } %>%
       exclude_points_outside_crcsas()
     
@@ -512,15 +540,14 @@ for ( i in 1:nrow(base_files) ) {
         -init_time, -year, -month) %>%
       exclude_points_outside_buffered_crcsas() %>%
       { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        PlotsHelper$aplicar_suavizado(
-          data_df = .,
-          cols_to_interp = c("prob_below", "prob_normal", "prob_above"),
-          delta = ifelse(base_file$type == "ereg", .5, .25),
-          inplace = ifelse(base_file$type == "ereg", T, F))
+        InterpolationHelper$interp_kriging(
+          data_df = ., 
+          cols_to_interp = c("prob_below", "prob_normal", "prob_above"), 
+          new_grid_sf = new_grid_sf)
         else . } %>%
       exclude_points_outside_crcsas() %>%
       FcstProbabilisticData$add_categories(
-        prob_data_df = prob_fcst_df, 
+        prob_data_df = ., 
         below_col = "prob_below", 
         normal_col = "prob_normal", 
         above_col = "prob_above")
