@@ -143,7 +143,7 @@ get_value_color <- function(valor, breaks, colors, na_value_color) {
 InterpolationHelper <- R6::R6Class(
   classname = "InterpolationHelper",
   public = list(
-    interp_kriging = function(data_df, cols_to_interp, delta, inplace) {
+    interp_kriging = function(data_df, cols_to_interp, delta = NULL, new_grid_sf = NULL, inplace=FALSE) {
       ##### Kriging  
       
       # El método Kriging es un poco más complicado que el IDW, ya que requiere 
@@ -169,28 +169,30 @@ InterpolationHelper <- R6::R6Class(
       # Crear grilla nueva. Los puntos de la grilla nueva no pueden coincidir
       # con los puntos de la grilla original, porque si coinciden la 
       # interpolación no producen ningún cambio en los gráficos.
-      if ( global_config$get_config("unify_grid") ) {
-        spatial_domain <- global_config$get_config("spatial_domain")
-        grid_resolution <- global_config$get_config("unify_grid_resolution")
-        new_grid_sf <- tibble::as_tibble(
-          expand.grid(longitude = seq(from = spatial_domain$wlo, 
-                                      to = spatial_domain$elo, 
-                                      by = grid_resolution), 
-                      latitude = seq(from = spatial_domain$sla, 
-                                     to = spatial_domain$nla, 
-                                     by = grid_resolution))) %>%
-          sf::st_as_sf(coords = c("longitude", "latitude"), 
-                       remove = FALSE, crs = 4326)
-      } else {
-        new_grid_sf <- tibble::as_tibble(
-          expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
-                                      to = max(data_df$longitude) + delta, 
-                                      by = delta*2), 
-                      latitude = seq(from = min(data_df$latitude) - delta, 
-                                     to = max(data_df$latitude) + delta, 
-                                     by = delta*2))) %>%
-          sf::st_as_sf(coords = c("longitude", "latitude"), 
-                       remove = FALSE, crs = 4326)
+      if ( is.null(new_grid_sf) ) {
+        if ( global_config$get_config("unify_grid") ) {
+          spatial_domain <- global_config$get_config("spatial_domain")
+          grid_resolution <- global_config$get_config("unify_grid_resolution")
+          new_grid_sf <- tibble::as_tibble(
+            expand.grid(longitude = seq(from = spatial_domain$wlo, 
+                                        to = spatial_domain$elo, 
+                                        by = grid_resolution), 
+                        latitude = seq(from = spatial_domain$sla, 
+                                       to = spatial_domain$nla, 
+                                       by = grid_resolution))) %>%
+            sf::st_as_sf(coords = c("longitude", "latitude"), 
+                         remove = FALSE, crs = 4326)
+        } else {
+          new_grid_sf <- tibble::as_tibble(
+            expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
+                                        to = max(data_df$longitude) + delta, 
+                                        by = delta*2), 
+                        latitude = seq(from = min(data_df$latitude) - delta, 
+                                       to = max(data_df$latitude) + delta, 
+                                       by = delta*2))) %>%
+            sf::st_as_sf(coords = c("longitude", "latitude"), 
+                         remove = FALSE, crs = 4326)
+        }
       }
       
       # Se deben eliminar los NA para poder crear los variogramas
@@ -291,6 +293,33 @@ InterpolationHelper <- R6::R6Class(
       
       # Retornar resultado
       return ( datos_interp )
+    },
+    interp_bilinear = function(data_df, cols_to_interp, new_points, grid = FALSE) {
+        
+      # Define interpolation formula
+      f_left_side <- paste(cols_to_interp, collapse = " | ")
+      f_right_side <- "longitude + latitude"
+      interp_formula <- as.formula(paste(f_left_side, "~", f_right_side))
+      
+      # Interpolate data
+      interp_data <- metR::Interpolate(
+        formula = interp_formula, 
+        x.out = new_points$longitude, 
+        y.out = new_points$latitude, 
+        grid = grid, 
+        data = data_df)
+      
+      if ( length(cols_to_interp) > 1 ) {
+        # Para estar seguros que las probabilidades interpoladas sumen 1,
+        # la probabilidad normal se recalcula como 1 - above - bellow
+        interp_data <- tibble::as_tibble(interp_data)  %>%
+          dplyr::mutate(
+            !!as.name(cols_to_interp[1]) := 
+              1 - sum(cols_to_interp[seq(2, length(cols_to_interp))])
+          )}
+      
+      # Retornar datos interpolados
+      return ( interp_data )
     }
   ),
   lock_objects = TRUE,
@@ -300,6 +329,9 @@ InterpolationHelper <- R6::R6Class(
 # Declare class methods
 InterpolationHelper$interp_kriging = function(...) {
   InterpolationHelper$public_methods$interp_kriging(...) 
+}
+InterpolationHelper$interp_bilinear = function(...) {
+  InterpolationHelper$public_methods$interp_bilinear(...) 
 }
 
 

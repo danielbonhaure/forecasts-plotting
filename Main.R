@@ -212,6 +212,7 @@ for ( i in 1:nrow(base_files) ) {
   
   # Definir máscara cuando corresponda
   if ( base_file$type == 'ereg' && config_ereg$apply_dry_mask ) {
+    logger::log_info('Inicia obtención de la máscara a ser aplicada')
     
     # Leer archivo con mascara seca para EREG
     dry_mask_df = tidync::tidync(config_ereg$dry_mask_file) %>% 
@@ -245,7 +246,60 @@ for ( i in 1:nrow(base_files) ) {
       dplyr::select(longitude, latitude, must_be_masked)
     
     
-  }
+    # Si la grilla de la máscara no coincide con la grilla de los datos
+    # pronosticados, entonces se debe interpolar la máscara.
+    if ( !are_points_joinables(datos_entrada$pred_det_fcst_data$data, 
+                               dry_mask_trgt_months) ) {
+      logger::log_info('Inicia interpolación de la máscara')
+      
+      # Obtener dominio espacial
+      dominio_espacial <- global_config$get_config('spatial_domain')
+      
+      # Reducir cantidad de puntos, excluir puntos fuera del dominio espacial
+      dry_mask_trgt_months <- dry_mask_trgt_months %>%
+        dplyr::filter(longitude >= dominio_espacial$wlo - 2, 
+                      longitude <= dominio_espacial$elo + 2, 
+                      latitude <= dominio_espacial$nla + 2, 
+                      latitude >= dominio_espacial$sla - 2)
+      reduced_orig_dry_mask <- dry_mask_trgt_months %>% sf::st_as_sf(
+        coords = c("longitude", "latitude"), 
+        remove = FALSE, crs = 4326) 
+      
+      # Definir valores que permiten definir la nueva grilla
+      trgt_lons <- datos_entrada$pred_det_fcst_data$data$longitude
+      trgt_lats <- datos_entrada$pred_det_fcst_data$data$latitude
+      dist_between_lon <- min(spatial_dist(trgt_lons)) / 2
+      dist_between_lat <- min(spatial_dist(trgt_lats)) / 2
+      delta <- min(dist_between_lon, dist_between_lat)
+      
+      # Definir nueva grilla
+      new_grid_sf <- tibble::as_tibble(
+        expand.grid(longitude = seq(from = min(trgt_lons) - delta, 
+                                    to = max(trgt_lons) + delta, 
+                                    by = delta*2), 
+                    latitude = seq(from = min(trgt_lats) - delta, 
+                                   to = max(trgt_lats) + delta, 
+                                   by = delta*2))) %>%
+        sf::st_as_sf(coords = c("longitude", "latitude"), 
+                     remove = FALSE, crs = 4326)
+      
+      # Interpolar resultados
+      dry_mask_trgt_months <- 
+        InterpolationHelper$interp_bilinear(
+          data_df = dry_mask_trgt_months,
+          cols_to_interp = "must_be_masked",
+          new_points = new_grid_sf) %>%
+        dplyr::mutate(
+          must_be_masked = dplyr::case_when(
+            must_be_masked <= 0 ~ as.logical(0),
+            must_be_masked > 0 ~ as.logical(1),
+            TRUE ~ NA
+          )) %>%
+        exclude_points_outside_buffered_crcsas()
+      
+    }  # fin de la interpolación
+    
+  }  # fin de la creación de la máscara
   
   
   # 
