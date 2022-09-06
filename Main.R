@@ -70,6 +70,11 @@ global_config <- Config$new(here::here('config.yaml'))
 
 # Obtener condiciones inciales
 global_ic <- global_config$get_config('initial_conditions')
+if  ( is.null(global_ic) ) {
+  global_ic <- list()
+  global_ic$month <- lubridate::month(lubridate::now())
+  global_ic$year <- lubridate::year(lubridate::now())
+}
 
 # Obtener configuración para pronos CPT
 config_cpt <- global_config$get_config('acc-cpt')

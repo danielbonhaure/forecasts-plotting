@@ -8,9 +8,9 @@ spatial_domain:
 unify_grid: FALSE
 unify_grid_resolution: 1
 
-initial_conditions:
-  month: 5
-  year: 2022
+# initial_conditions:
+#   month: 5
+#   year: 2022
 
 shapefiles:
   crc-sas: "/data/shapefiles/CRC_SAS.shp"
