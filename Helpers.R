@@ -308,10 +308,10 @@ PlotsHelper <- R6::R6Class(
   classname = "PlotsHelper",
   public = list(
     graficar_mapa = function(data_df, gridded_data, spatial_domain, 
-                             main_title, legend_title, 
-                             output_file_abspath, 
+                             main_title, legend_title, lang,
+                             output_file_abspath, dry_mask_df,
                              breaks = NULL, colors = NULL, 
-                             dry_mask_df, save_map = T) {
+                             save_map = T) {
       
       # Establecer breaks y color por defecto (siempre debe haber un color más que breaks)
       if ( is.null(breaks) && is.null(colors) ) {
@@ -445,7 +445,9 @@ PlotsHelper <- R6::R6Class(
           position = "bottomleft") %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(
-            title = "Descargar mapa a PNG",
+            title = switch(lang, "en" = "Download map as PNG", 
+                           "es" = "Descargar mapa como PNG", 
+                           "pt" = "Baixar mapa como PNG"),
             sizeModes = list("A4Portrait", "A4Landscape"),
             exportOnly = TRUE,
             hideControlContainer = FALSE,
@@ -462,10 +464,11 @@ PlotsHelper <- R6::R6Class(
       return ( m )
     },
     graficar_mapa_prob = function(data_df, gridded_data, spatial_domain,
-                                  main_title, output_file_abspath, 
+                                  main_title, legend_tittle, lang, 
+                                  output_file_abspath, dry_mask_df,
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
-                                  dry_mask_df, save_map = T) {
+                                  save_map = T) {
         
       # Determinar el color de cada celda
       data_df <- data_df %>%
@@ -503,6 +506,17 @@ PlotsHelper <- R6::R6Class(
         dist_between_lat <- ifelse(dist_between_lat > 2, 2, dist_between_lat)
         circle_radius <- min(c(dist_between_lon, dist_between_lat))
       }
+      
+      # Definir que mostrar en popup y label
+      txt_prob_below = switch(lang, "en" = "Prob. Below", 
+                              "es" = "Prob. Inferior",
+                              "pt" = "Prob. Debaixo")
+      txt_prob_normal = switch(lang, "en" = "Prob. Normal", 
+                               "es" = "Prob. Normal",
+                               "pt" = "Prob. Normal")
+      txt_prob_above = switch(lang, "en" = "Prob. Above", 
+                              "es" = "Prob. Superior",
+                              "pt" = "Prob. Acima")
       
       # Generar el gráfico
       css_fix_1 <- 
@@ -545,15 +559,19 @@ PlotsHelper <- R6::R6Class(
             fillColor = ~ c_color,
             fillOpacity = 0.7,
             popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>Prob. Below: {auto_round(prob_below)}</center>",
-                                 "<center>Prob. Near: {auto_round(prob_normal)}</center>",
-                                 "<center>Prob. Above: {auto_round(prob_above)}</center>"),
+                                 "<center>{txt_prob_below}: {auto_round(prob_below)}</center>",
+                                 "<center>{txt_prob_normal}: {auto_round(prob_normal)}</center>",
+                                 "<center>{txt_prob_above}: {auto_round(prob_above)}</center>"),
             label = ~ dplyr::case_when(
-              category == 'below' ~ glue::glue("Prob. Below: {auto_round(prob_below)}"),
-              category == 'normal' ~ glue::glue("Prob. Normal: {auto_round(prob_normal)}"),
-              category == 'above' ~ glue::glue("Prob. Above: {auto_round(prob_above)}"),
-              is.na(category) ~ 'Sin datos',
-              TRUE ~ 'Categoría desconocida!'))
+              category == 'below' ~ glue::glue("{txt_prob_below}: {auto_round(prob_below)}"),
+              category == 'normal' ~ glue::glue("{txt_prob_normal}: {auto_round(prob_normal)}"),
+              category == 'above' ~ glue::glue("{txt_prob_above}: {auto_round(prob_above)}"),
+              is.na(category) ~ switch(lang, "en" = "No data", 
+                                       "es" = "Sin datos", 
+                                       "pt" = "Não há dados"),
+              TRUE ~ switch(lang, "en" = "Unknown category!", 
+                            "es" = "Categoría desconocida!", 
+                            "pt" = "Categoria desconhecida!")))
           else . } %>%
         { if ( !gridded_data ) 
           leaflet::addCircleMarkers(
@@ -564,15 +582,19 @@ PlotsHelper <- R6::R6Class(
             fillColor = ~ c_color,
             fillOpacity = 0.7,
             popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>Prob. Below: {auto_round(prob_below)}</center>",
-                                 "<center>Prob. Near: {auto_round(prob_normal)}</center>",
-                                 "<center>Prob. Above: {auto_round(prob_above)}</center>"),
+                                 "<center>{txt_prob_below}: {auto_round(prob_below)}</center>",
+                                 "<center>{txt_prob_normal}: {auto_round(prob_normal)}</center>",
+                                 "<center>{txt_prob_above}: {auto_round(prob_above)}</center>"),
             label = ~ dplyr::case_when(
-              category == 'below' ~ glue::glue("Prob. Below: {auto_round(prob_below)}"),
-              category == 'normal' ~ glue::glue("Prob. Normal: {auto_round(prob_normal)}"),
-              category == 'above' ~ glue::glue("Prob. Above: {auto_round(prob_above)}"),
-              is.na(category) ~ 'Sin datos',
-              TRUE ~ 'Categoría desconocida!'))
+              category == 'below' ~ glue::glue("{txt_prob_below}: {auto_round(prob_below)}"),
+              category == 'normal' ~ glue::glue("{txt_prob_normal}: {auto_round(prob_normal)}"),
+              category == 'above' ~ glue::glue("{txt_prob_above}: {auto_round(prob_above)}"),
+              is.na(category) ~ switch(lang, "en" = "No data", 
+                                       "es" = "Sin datos", 
+                                       "pt" = "Não há dados"),
+              TRUE ~ switch(lang, "en" = "Unknown category!", 
+                            "es" = "Categoría desconocida!", 
+                            "pt" = "Categoria desconhecida!")))
           else . } %>%
         leaflet::addLegend(
           map = .,
@@ -607,6 +629,7 @@ PlotsHelper <- R6::R6Class(
                      purrr::map_chr(
                        .x = if (!is.null(dry_mask_df)) c("NaN", "DryM.") else "NaN", 
                        .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
+          title = htmltools::HTML(legend_title),
           className = "info legend principal",
           opacity = 0.9) %>%
         leaflet::addControl(
@@ -620,7 +643,9 @@ PlotsHelper <- R6::R6Class(
           position = "bottomleft") %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(
-            title = "Descargar mapa a PNG",
+            title = switch(lang, "en" = "Download map as PNG", 
+                           "es" = "Descargar mapa como PNG", 
+                           "pt" = "Baixar mapa como PNG"),
             sizeModes = list("A4Portrait", "A4Landscape"),
             exportOnly = TRUE,
             hideControlContainer = FALSE,
@@ -636,69 +661,147 @@ PlotsHelper <- R6::R6Class(
       # Retornar mapa (para pruebas)
       return ( m )
     },
-    definir_titulo = function(data_type, base_file, data_year = NULL) {
+    definir_titulo = function(data_type, base_file, lang, data_year = NULL) {
+      
+      meses_abb <- switch(lang, "en" = month.abb, 
+                          "es" = c("Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                                   "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"), 
+                          "pt" = c("Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                                   "Jul", "Ago", "Set", "Out", "Nov", "Dez"))
+      meses_name <- switch(lang, "en" = month.name, 
+                           "es" = c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"), 
+                           "pt" = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"))
       
       variable <- base_file$variable
-      variable_str <- ifelse(variable == 'prcp', 'Precipitation', 'Average Air Temperature - 2m')
+      variable_str <- ifelse(variable == 'prcp', 
+                             switch(lang, "en" = "Precipitation", 
+                                    "es" = "Precipitación", 
+                                    "pt" = "Precipitação"), 
+                             switch(lang, "en" = "Average Air Temperature - 2m", 
+                                    "es" = "Temperatura Media del Aire - 2m",
+                                    "pt" = "Temperatura Média do Ar - 2m"))
       variable_unit <- ifelse(variable == 'prcp', 'mm', '°C')
       
       modelo <- stringr::str_extract(base_file$basename, cpt_regex_modelos)
       if ( is.na(modelo) )
         modelo <- stringr::str_extract(base_file$basename, ereg_regex_modelos)
       
-      initial_month <- month.abb[global_ic$month]
+      initial_month <- meses_abb[global_ic$month]
       initial_year <- global_ic$year
       
       valid_months <- stringr::str_split(base_file$target_months, '-') %>% 
         purrr::reduce(c) %>% as.numeric()
       
       forecast_months_str <- ifelse(
-        length(valid_months) == 1, month.name[valid_months[[1]]], 
-        paste0(month.abb[valid_months[[1]]], '-', month.abb[valid_months[[3]]]))
+        length(valid_months) == 1, meses_name[valid_months[[1]]], 
+        paste0(meses_abb[valid_months[[1]]], '-', meses_abb[valid_months[[3]]]))
       
       if ( !is.null(data_year) ) {
-        month_year <- glue::glue("{month.abb[valid_months[[1]]]} {data_year}")
+        month_year <- glue::glue("{meses_abb[valid_months[[1]]]} {data_year}")
         if (length(valid_months) > 1) {
           if (valid_months[[1]] > valid_months[[3]]) {
-            month_year <- glue::glue("{month_year} - {month.abb[valid_months[[3]]]} {data_year+1}")
+            month_year <- glue::glue("{month_year} - {meses_abb[valid_months[[3]]]} {data_year+1}")
           } else {
-            month_year <- glue::glue("{month_year} - {month.abb[valid_months[[3]]]} {data_year}")
+            month_year <- glue::glue("{month_year} - {meses_abb[valid_months[[3]]]} {data_year}")
           }
         } 
       }
       
+      
       # Definir título por defecto
-      main_title <- "Título no definido"
+      main_title <- switch(lang, "en" = "Undefined title", 
+                           "es" = "Título no definido",
+                           "pt" = "Título indefinido")
+      
+      # Definir elementos según idioma
+      valid_for <- switch(lang, "en" = "valid for", 
+                          "es" = "válido para",
+                          "pt" = "valido para")
+      issued <- switch(lang, "en" = "Issued", 
+                       "es" = "Emitido",
+                       "pt" = "Emitido")
+      calibrate <- switch(lang, "en" = "calibrated forecast", 
+                          "es" = "pronóstico calibrado",
+                          "pt" = "previsão calibrada")
+      uncalibrate <- switch(lang, "en" = "uncalibrated forecast", 
+                            "es" = "pronóstico no calibrado",
+                            "pt" = "previsão não calibrada")
       
       # Definir título real
       if (data_type == "anom") {
-        main_title <- glue::glue("{variable_str} Anomaly Forecast ({variable_unit})",
-                                 "\n{toupper(modelo)} valid for {month_year} ",
-                                 "\nIssued: {initial_month} {initial_year}")
+        anomaly_desc <- switch(lang, "en" = "Anomaly Forecast", 
+                               "es" = "Pronóstico de Anomalías",
+                               "pt" = "Previsão de Anomalia")
+        main_title <- glue::glue("{variable_str} {anomaly_desc} ({variable_unit})",
+                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
+                                 "\n{issued}: {initial_month} {initial_year}")
       } else if (data_type == "corr") {
-        main_title <- glue::glue("Correlation between Forecast and Observation ",
+        correlation_desc <- switch(lang, "en" = "Correlation between Forecast and Observation", 
+                                   "es" = "Correlación entre Pronóstico y Observación",
+                                   "pt" = "Correlação entre Previsão e Observação")
+        main_title <- glue::glue("{correlation_desc} ",
                                  "({base_file$hcst_first_year}-{base_file$hcst_last_year})",
-                                 "\n{toupper(modelo)} valid for {forecast_months_str} ",
-                                 "\nIssued: {initial_month}")
+                                 "\n{toupper(modelo)} {valid_for} {forecast_months_str} ",
+                                 "\n{issued}: {initial_month}")
       } else if (data_type == "det.fcst") {
         main_title <- glue::glue("{variable_str} ({variable_unit})",
-                                 "\n{toupper(modelo)} valid for {month_year} ",
-                                 "\nIssued: {initial_month} {initial_year} ",
-                                 "\n(calibrated forecast)")
+                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
+                                 "\n{issued}: {initial_month} {initial_year} ",
+                                 "\n({calibrated})")
       } else if (data_type == "prob.fcst") {
         main_title <- glue::glue("{variable_str} ({variable_unit})",
-                                 "\n{toupper(modelo)} valid for {month_year} ",
-                                 "\nIssued: {initial_month} {initial_year} ",
-                                 "\n(calibrated forecast)")
+                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
+                                 "\n{issued}: {initial_month} {initial_year} ",
+                                 "\n({calibrated})")
       } else if (data_type == "uncal.fcst") {
         main_title <- glue::glue("{variable_str} ({variable_unit})",
-                                 "\n{toupper(modelo)} valid for {month_year} ",
-                                 "\nIssued: {initial_month} {initial_year} ",
-                                 "\n(uncalibrated forecast)")
+                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
+                                 "\n{issued}: {initial_month} {initial_year} ",
+                                 "\n({uncalibrated})")
       } 
       
       # Retornar título real
       return ( main_title )
+      
+    },
+    definir_titulo_leyenda = function(data_type, base_file, lang) {
+      
+      variable <- base_file$variable
+      variable_str <- ifelse(variable == 'prcp', 
+                             switch(lang, "en" = "Precipitation", 
+                                    "es" = "Precipitación", 
+                                    "pt" = "Precipitação"), 
+                             switch(lang, "en" = "Temperature 2m", 
+                                    "es" = "Temperatura 2m",
+                                    "pt" = "Temperatura 2m"))
+      variable_unit <- ifelse(variable == 'prcp', 'mm', '°C')
+      
+      # Definir título por defecto
+      legend_title <- switch(lang, "en" = "", "es" = "", "pt" = "")
+      
+      # Definir título real
+      if (data_type == "anom") {
+        anomaly_desc <- switch(lang, "en" = "Anomaly", 
+                               "es" = "Anomalía",
+                               "pt" = "Anomalia")
+        legend_title <- glue::glue("{anomaly_desc} ({variable_unit})")
+      } else if (data_type == "corr") {
+        correlation_desc <- switch(lang, "en" = "Correlation", 
+                                   "es" = "Correlación",
+                                   "pt" = "Correlação")
+        legend_title <- glue::glue("{correlation_desc}")
+      } else if (data_type == "det.fcst") {
+        legend_title <- glue::glue("{variable_str} ({variable_unit})")
+      } else if (data_type == "prob.fcst") {
+        legend_title <- glue::glue("")
+      } else if (data_type == "uncal.fcst") {
+        legend_title <- glue::glue("{variable_str} ({variable_unit})")
+      } 
+      
+      # Retornar título real
+      return ( legend_title )
       
     }
   ),
@@ -717,6 +820,9 @@ PlotsHelper$graficar_mapa_prob = function(...) {
 }
 PlotsHelper$definir_titulo = function(...) {
   PlotsHelper$public_methods$definir_titulo(...)
+}
+PlotsHelper$definir_titulo_leyenda = function(...) {
+  PlotsHelper$public_methods$definir_titulo_leyenda(...)
 }
 
 CorrelationHelper <- R6::R6Class(

@@ -80,6 +80,9 @@ config_ereg <- global_config$get_config('ereg')
 # Obtener el dominio espacial de los gráficos
 spatial_domain <- global_config$get_config("spatial_domain")
 
+# Obtener los idiomas para los gráficos
+output_langs <- global_config$get_config("output_langs")
+
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
@@ -392,23 +395,26 @@ for ( i in 1:nrow(base_files) ) {
   paleta_completa <- c(red_plt, "#f1f1f1", blue_plt)
   
   # Crear gráfico
-  corr_plot <- PlotsHelper$graficar_mapa(
-    data_df = corr_df, 
-    gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
-    main_title = PlotsHelper$definir_titulo("corr", base_file), 
-    legend_title = "Correlation", 
-    spatial_domain = list(
-      nla = max(corr_df$latitude),
-      sla = min(corr_df$latitude),
-      wlo = min(corr_df$longitude),
-      elo = max(corr_df$longitude)), 
-    output_file_abspath = paste0(
-      global_config$get_config(base_file$type)$output_folder, "/", 
-      base_file$basename, "_corr.html"),
-    breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
-    colors = paleta_completa, 
-    dry_mask_df = dry_mask_trgt_months,
-    save_map = TRUE)
+  for ( lang in output_langs ) {
+    corr_plot <- PlotsHelper$graficar_mapa(
+      data_df = corr_df, 
+      gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
+      main_title = PlotsHelper$definir_titulo("corr", base_file, lang), 
+      legend_title = PlotsHelper$definir_titulo_leyenda("corr", base_file, lang), 
+      lang = lang,
+      spatial_domain = list(
+        nla = max(corr_df$latitude),
+        sla = min(corr_df$latitude),
+        wlo = min(corr_df$longitude),
+        elo = max(corr_df$longitude)), 
+      output_file_abspath = paste0(
+        global_config$get_config(base_file$type)$output_folder, "/", 
+        base_file$basename, "_corr_", lang,".html"),
+      breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
+      colors = paleta_completa, 
+      dry_mask_df = dry_mask_trgt_months,
+      save_map = TRUE)
+  }
   
   
   #
@@ -476,33 +482,34 @@ for ( i in 1:nrow(base_files) ) {
       brown_plt <- head(colores, 5)
       green_plt <- tail(colores, 5)
       paleta_completa <- c(brown_plt, "#e5e8e8", green_plt)
-      legend_title <- "Anomaly (mm)"
     } else if (base_file$variable == 't2m') {
       breaks <- c(-2,-1,-0.5,-0.3,-0.1,0.1,0.3,0.5,1,2)
       blue_plt <- head(rev(RColorBrewer::brewer.pal(7, 'Blues')), 5)
       red_plt <- tail(RColorBrewer::brewer.pal(7, 'Reds'), 5)
       paleta_completa <- c(blue_plt, "#e5e8e8", red_plt)
-      legend_title <- "Anomaly (°C)"
     }
     
     # Crear gráfico
-    anom_plot <- PlotsHelper$graficar_mapa(
-      data_df = anom_df, 
-      gridded_data = det_gridded_data,
-      main_title = PlotsHelper$definir_titulo("anom", base_file, data_year), 
-      legend_title = legend_title, 
-      spatial_domain = list(
-        nla = max(anom_df$latitude),
-        sla = min(anom_df$latitude),
-        wlo = min(anom_df$longitude),
-        elo = max(anom_df$longitude)), 
-      output_file_abspath = paste0(
-        global_config$get_config(base_file$type)$output_folder, "/", 
-        base_file$basename, "_anom.html"),
-      breaks = breaks,
-      colors = paleta_completa, 
-      dry_mask_df = dry_mask_trgt_months,
-      save_map = TRUE)
+    for ( lang in output_langs ) {
+      anom_plot <- PlotsHelper$graficar_mapa(
+        data_df = anom_df, 
+        gridded_data = det_gridded_data,
+        main_title = PlotsHelper$definir_titulo("anom", base_file, lang, data_year), 
+        legend_title <- PlotsHelper$definir_titulo_leyenda("anom", base_file, lang), 
+        lang = lang,
+        spatial_domain = list(
+          nla = max(anom_df$latitude),
+          sla = min(anom_df$latitude),
+          wlo = min(anom_df$longitude),
+          elo = max(anom_df$longitude)), 
+        output_file_abspath = paste0(
+          global_config$get_config(base_file$type)$output_folder, "/", 
+          base_file$basename, "_anom_", lang, ".html"),
+        breaks = breaks,
+        colors = paleta_completa, 
+        dry_mask_df = dry_mask_trgt_months,
+        save_map = TRUE)
+    }
     
     
     #
@@ -552,31 +559,32 @@ for ( i in 1:nrow(base_files) ) {
         breaks <- c(1,25,50,100,150,200,300,500,750,1000,1500)
       paleta_completa <- grDevices::colorRampPalette(
         colors = RColorBrewer::brewer.pal(9, 'Blues'))( 12 )
-      legend_title <- "Precipitation (mm)"
     } else if (base_file$variable == 't2m') {
       breaks <- c(-9,-6,-3,3,6,9,12,15,18,21,24,27,30,33)
       paleta_completa <- viridis::turbo(15)
-      legend_title <- "Temperature 2m (°C)"
     }
     
     # Crear gráfico
-    det_fcst_plot <- PlotsHelper$graficar_mapa(
-      data_df = det_fcst_df, 
-      gridded_data = det_gridded_data,
-      main_title = PlotsHelper$definir_titulo("det.fcst", base_file, data_year), 
-      legend_title = legend_title, 
-      spatial_domain = list(
-        nla = max(det_fcst_df$latitude),
-        sla = min(det_fcst_df$latitude),
-        wlo = min(det_fcst_df$longitude),
-        elo = max(det_fcst_df$longitude)), 
-      output_file_abspath = paste0(
-        global_config$get_config(base_file$type)$output_folder, "/", 
-        base_file$basename, "_det_fcst.html"),
-      breaks = breaks,
-      colors = paleta_completa, 
-      dry_mask_df = dry_mask_trgt_months,
-      save_map = TRUE)
+    for ( lang in output_langs ) {
+      det_fcst_plot <- PlotsHelper$graficar_mapa(
+        data_df = det_fcst_df, 
+        gridded_data = det_gridded_data,
+        main_title = PlotsHelper$definir_titulo("det.fcst", base_file, lang, data_year), 
+        legend_title <- PlotsHelper$definir_titulo_leyenda("det.fcst", base_file, lang), 
+        lang = lang,
+        spatial_domain = list(
+          nla = max(det_fcst_df$latitude),
+          sla = min(det_fcst_df$latitude),
+          wlo = min(det_fcst_df$longitude),
+          elo = max(det_fcst_df$longitude)), 
+        output_file_abspath = paste0(
+          global_config$get_config(base_file$type)$output_folder, "/", 
+          base_file$basename, "_det_fcst_", lang, ".html"),
+        breaks = breaks,
+        colors = paleta_completa, 
+        dry_mask_df = dry_mask_trgt_months,
+        save_map = TRUE)
+    }
   
   
     #
@@ -640,24 +648,28 @@ for ( i in 1:nrow(base_files) ) {
     paleta_above <- if (base_file$variable == "prcp") noaa_escala_azules else noaa_escala_rojos
     
     # Crear gráfico
-    prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
-      data_df = prob_fcst_df, 
-      gridded_data = prob_gridded_data,
-      main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, data_year), 
-      spatial_domain = list(
-        nla = max(prob_fcst_df$latitude),
-        sla = min(prob_fcst_df$latitude),
-        wlo = min(prob_fcst_df$longitude),
-        elo = max(prob_fcst_df$longitude)), 
-      output_file_abspath = paste0(
-        global_config$get_config(base_file$type)$output_folder, "/", 
-        base_file$basename, "_prob_fcst.html"),
-      breaks = breaks,
-      colors_below = paleta_below, 
-      colors_normal = paleta_normal, 
-      colors_above = paleta_above, 
-      dry_mask_df = dry_mask_trgt_months,
-      save_map = TRUE)
+    for ( lang in output_langs ) {
+      prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
+        data_df = prob_fcst_df, 
+        gridded_data = prob_gridded_data,
+        main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
+        legend_title <- PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
+        lang = lang,
+        spatial_domain = list(
+          nla = max(prob_fcst_df$latitude),
+          sla = min(prob_fcst_df$latitude),
+          wlo = min(prob_fcst_df$longitude),
+          elo = max(prob_fcst_df$longitude)), 
+        output_file_abspath = paste0(
+          global_config$get_config(base_file$type)$output_folder, "/", 
+          base_file$basename, "_prob_fcst_", lang, ".html"),
+        breaks = breaks,
+        colors_below = paleta_below, 
+        colors_normal = paleta_normal, 
+        colors_above = paleta_above, 
+        dry_mask_df = dry_mask_trgt_months,
+        save_map = TRUE)
+    }
     
     
     #
@@ -695,31 +707,32 @@ for ( i in 1:nrow(base_files) ) {
           breaks <- c(1,25,50,100,150,200,300,500,750,1000,1500)
         paleta_completa <- grDevices::colorRampPalette(
           colors = RColorBrewer::brewer.pal(9, 'Blues'))( 12 )
-        legend_title <- "Precipitation (mm)"
       } else if (base_file$variable == 't2m') {
         breaks <- c(-9,-6,-3,3,6,9,12,15,18,21,24,27,30,33)
         paleta_completa <- viridis::turbo(15)
-        legend_title <- "Temperature 2m (°C)"
       }
       
       # Crear gráfico
-      uncal_fcst_plot <- PlotsHelper$graficar_mapa(
-        data_df = uncal_fcst_df, 
-        gridded_data = uncal_gridded_data,
-        main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, data_year), 
-        legend_title = legend_title, 
-        spatial_domain = list(
-          nla = max(uncal_fcst_df$latitude),
-          sla = min(uncal_fcst_df$latitude),
-          wlo = min(uncal_fcst_df$longitude),
-          elo = max(uncal_fcst_df$longitude)), 
-        output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder, "/", 
-          base_file$basename, "_uncal_fcst.html"),
-        breaks = breaks,
-        colors = paleta_completa, 
-        dry_mask_df = dry_mask_trgt_months,
-        save_map = TRUE)
+      for ( lang in output_langs ) {
+        uncal_fcst_plot <- PlotsHelper$graficar_mapa(
+          data_df = uncal_fcst_df, 
+          gridded_data = uncal_gridded_data,
+          main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, lang, data_year), 
+          legend_title <- PlotsHelper$definir_titulo_leyenda("uncal.fcst", base_file, lang), 
+          lang = lang,
+          spatial_domain = list(
+            nla = max(uncal_fcst_df$latitude),
+            sla = min(uncal_fcst_df$latitude),
+            wlo = min(uncal_fcst_df$longitude),
+            elo = max(uncal_fcst_df$longitude)), 
+          output_file_abspath = paste0(
+            global_config$get_config(base_file$type)$output_folder, "/", 
+            base_file$basename, "_uncal_fcst_", lang, ".html"),
+          breaks = breaks,
+          colors = paleta_completa, 
+          dry_mask_df = dry_mask_trgt_months,
+          save_map = TRUE)
+      }
       
     }  # FIN DEL IF: if ( !is.null(datos_entrada$uncalibrated_fcst_data) )
   

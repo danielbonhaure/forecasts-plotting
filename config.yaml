@@ -18,6 +18,8 @@ shapefiles:
 images: 
   crc-sas: "/data/images/logo-crcsas.png"
 
+output_langs: ["en", "es", "pt"]
+
 acc-cpt:  
   variables: ["prcp", "t2m"]
   modelos: ["ecmwf", "nmme", "nasa"]
