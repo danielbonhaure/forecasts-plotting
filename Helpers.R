@@ -248,12 +248,6 @@ InterpolationHelper <- R6::R6Class(
             1 - rowSums(dplyr::across(
               cols_to_interp[!grepl('normal', cols_to_interp)])))
       
-      # Antes de retornar los resultados se debe verificar que no hay puntos
-      # sobre la línea de los 10 grados de latitud.
-      datos_interp <- datos_interp %>%
-        dplyr::filter(latitude < global_config$get_config('spatial_domain')$nla)
-      
-      
       # Retornar resultado
       return ( datos_interp )
     },

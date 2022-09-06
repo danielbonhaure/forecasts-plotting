@@ -130,7 +130,10 @@ cpt_base_files <-
       stringr::str_detect(stringr::str_extract(basename, cpt_regex_months), '-'),
       yes = paste(crange(global_ic$month+1, global_ic$month+3, 12), collapse='-'),
       no = stringr::str_extract(basename, cpt_regex_months))
-  ) %>% dplyr::ungroup()
+  ) %>% dplyr::ungroup() %>%
+  dplyr::mutate(
+    obs_data_source = stringr::str_extract(basename, cpt_regex_fuente_datos)
+  )
 
 # Identificar Archivos EREG-Climax
 ereg_base_files <-
@@ -173,7 +176,10 @@ ereg_base_files <-
       yes=2010, no=2011),
     target_months = paste(
       MonthsHelper$trimester_to_seq(trimester), collapse='-')
-  ) %>% dplyr::select(-trimester) %>% dplyr::ungroup()
+  ) %>% dplyr::select(-trimester) %>% dplyr::ungroup() %>%
+  dplyr::mutate(
+    obs_data_source = ifelse(variable == "prcp", "cpc-cmap-urd", "ghcn_cams")
+  )
 
 # Unir archivos identificados en un único dataframe
 base_files <- dplyr::bind_rows(
@@ -232,9 +238,9 @@ for ( i in 1:nrow(base_files) ) {
       expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
                                   to = max(data_df$longitude) + delta, 
                                   by = delta*2), 
-                  latitude = seq(from = min(data_df$latitude) - delta, 
-                                 to = max(data_df$latitude) + delta, 
-                                 by = delta*2))) %>%
+                  latitude = seq(from = max(data_df$latitude) + delta, 
+                                 to = spatial_domain$sla, 
+                                 by = -delta*2))) %>%
       sf::st_as_sf(coords = c("longitude", "latitude"), 
                    remove = FALSE, crs = 4326)
   }
@@ -357,10 +363,23 @@ for ( i in 1:nrow(base_files) ) {
       longitude, latitude, value = corr) %>%
     exclude_points_outside_buffered_crcsas() %>%
     { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-      InterpolationHelper$interp_kriging(
-        data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
+        InterpolationHelper$interp_kriging(
+          data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
       else . } %>%
-    exclude_points_outside_crcsas()
+    exclude_points_outside_crcsas() 
+  
+  # La interpolación puede hacer que haya puntos por sobre la línea de
+  # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+  corr_df <- corr_df %>%
+    dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+  
+  # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+  corr_df <- corr_df %>%
+    { if ( base_file$obs_data_source == "chirps" )
+        dplyr::mutate(.,
+          value = ifelse(latitude < -46, NA_integer_, value),
+          value = unname(value))
+      else . }
   
   # Definir paleta de colores
   red_plt  <- head(rev(RColorBrewer::brewer.pal(3, 'Reds')), 2)
@@ -423,10 +442,23 @@ for ( i in 1:nrow(base_files) ) {
         longitude, latitude, value = anomaly) %>%
       exclude_points_outside_buffered_crcsas() %>%
       { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        InterpolationHelper$interp_kriging(
-          data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
+          InterpolationHelper$interp_kriging(
+            data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
         else . } %>%
-      exclude_points_outside_crcsas()
+      exclude_points_outside_crcsas() 
+    
+    # La interpolación puede hacer que haya puntos por sobre la línea de
+    # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+    anom_df <- anom_df %>%
+      dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+    
+    # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+    anom_df <- anom_df %>%
+      { if ( base_file$obs_data_source == "chirps" )
+          dplyr::mutate(.,
+            value = ifelse(latitude < -46, NA_integer_, value),
+            value = unname(value))
+        else . }
     
     # Definir paleta de colores
     if (base_file$variable == 'prcp') {
@@ -482,7 +514,20 @@ for ( i in 1:nrow(base_files) ) {
         InterpolationHelper$interp_kriging(
           data_df = ., cols_to_interp = "value", new_grid_sf = new_grid_sf)
         else . } %>%
-      exclude_points_outside_crcsas()
+      exclude_points_outside_crcsas() 
+    
+    # La interpolación puede hacer que haya puntos por sobre la línea de
+    # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+    det_fcst_df <- det_fcst_df %>%
+      dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+    
+    # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+    det_fcst_df <- det_fcst_df %>%
+      { if ( base_file$obs_data_source == "chirps" )
+        dplyr::mutate(.,
+          value = ifelse(latitude < -46, NA_integer_, value),
+          value = unname(value))
+        else . }
     
     # Obtener la cantidad de meses objetivo (3 para seasonal y 1 para monthly)
     n_trgt_months <- stringr::str_split(base_file$target_months, '-') %>% 
@@ -540,17 +585,34 @@ for ( i in 1:nrow(base_files) ) {
         -init_time, -year, -month) %>%
       exclude_points_outside_buffered_crcsas() %>%
       { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        InterpolationHelper$interp_kriging(
-          data_df = ., 
-          cols_to_interp = c("prob_below", "prob_normal", "prob_above"), 
-          new_grid_sf = new_grid_sf)
+          InterpolationHelper$interp_kriging(
+            data_df = ., 
+            cols_to_interp = c("prob_below", "prob_normal", "prob_above"), 
+            new_grid_sf = new_grid_sf)
         else . } %>%
       exclude_points_outside_crcsas() %>%
       FcstProbabilisticData$add_categories(
         prob_data_df = ., 
         below_col = "prob_below", 
         normal_col = "prob_normal", 
-        above_col = "prob_above")
+        above_col = "prob_above") 
+    
+    # La interpolación puede hacer que haya puntos por sobre la línea de
+    # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+    prob_fcst_df <- prob_fcst_df %>%
+      dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+    
+    # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+    prob_fcst_df <- prob_fcst_df %>%
+      { if ( base_file$obs_data_source == "chirps" )
+          dplyr::mutate(.,
+            below_col = ifelse(latitude < -46, NA_integer_, below_col),
+            below_col = unname(below_col),
+            normal_col = ifelse(latitude < -46, NA_integer_, normal_col),
+            normal_col = unname(normal_col),
+            above_col = ifelse(latitude < -46, NA_integer_, above_col),
+            above_col = unname(above_col))
+        else . }
     
     # Definir paleta de colores de la NOAA
     # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
