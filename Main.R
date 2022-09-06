@@ -83,6 +83,9 @@ spatial_domain <- global_config$get_config("spatial_domain")
 # Obtener los idiomas para los gráficos
 output_langs <- global_config$get_config("output_langs")
 
+# Obtener los gráficos a producir
+output_plots <- global_config$get_config("output_plots")
+
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
@@ -185,12 +188,45 @@ ereg_base_files <-
   )
 
 # Unir archivos identificados en un único dataframe
-base_files <- dplyr::bind_rows(
-  list(cpt_base_files, ereg_base_files)
-)
+all_base_files <- dplyr::bind_rows(list(cpt_base_files, ereg_base_files))
+
+# Definir el df final, que contendrá los archivos a ser graficados
+base_files <- tibble::tibble()
+
+# Filtrar archivos por meses
+if ( 'months' %in% global_config$get_config('output_trgt_type') ) {
+  # Filtrar archivos por meses
+  m_base_files <- purrr::map_dfr(
+    .x = global_config$get_config('output_leadtimes'),
+    .f = function(lt, c_base_files) {
+      # Solo se grafican los meses indicados según el leadtime
+      c_base_files %>% dplyr::filter(
+        target_months == global_ic$month + lt)
+    }, c_base_files = all_base_files)
+  # Unir archivos filtradps en un único dataframe
+  base_files <- dplyr::bind_rows(list(base_files, m_base_files))
+  # Borrar objetos que ya no se va a utilizar
+  rm(m_base_files); invisible(gc())
+}
+
+# Filtrar archivos por trimestres
+if ( 'trimesters' %in% global_config$get_config('output_trgt_type') ) {
+  # Filtrar archivos por trimestres
+  t_base_files <- purrr::map_dfr(
+    .x = global_config$get_config('output_leadtimes'),
+    .f = function(lt, c_base_files) {
+      # Solo se grafican los trimestres indicados según el leadtime
+      c_base_files %>% dplyr::filter(
+        target_months == paste(crange(global_ic$month+lt, global_ic$month+lt+2, 12), collapse='-'))
+    }, c_base_files = all_base_files)
+  # Unir archivos filtradps en un único dataframe
+  base_files <- dplyr::bind_rows(list(base_files, t_base_files))
+  # Borrar objetos que ya no se va a utilizar
+  rm(t_base_files); invisible(gc())
+}
 
 # Borrar objetos que ya no se va a utilizar
-rm(cpt_base_files, ereg_base_files); gc()
+rm(all_base_files, cpt_base_files, ereg_base_files); invisible(gc())
 
 # ------------------------------------------------------------------------------
 
@@ -352,6 +388,8 @@ for ( i in 1:nrow(base_files) ) {
   # Crear gráfico de correlación
   #
   
+  if ( "corr" %in% output_plots ) {
+  
   logger::log_info('Inicia graficado de Correlación Histórica')
   
   # Definir df con los datos a graficar
@@ -416,6 +454,8 @@ for ( i in 1:nrow(base_files) ) {
       save_map = TRUE)
   }
   
+  }  # fin del if que genera gráficos de correlación
+  
   
   #
   # Graficar todos los años en el dataframe de forecasts
@@ -429,6 +469,8 @@ for ( i in 1:nrow(base_files) ) {
     #
     # Crear gráfico de anomalías
     #
+    
+    if ( "anom" %in% output_plots ) {
     
     logger::log_info(glue::glue("Inicia el graficado de las Anomalías para el año: {data_year}"))
     
@@ -511,10 +553,14 @@ for ( i in 1:nrow(base_files) ) {
         save_map = TRUE)
     }
     
+    }  # fin del if que genera gráficos de anomalías
+    
     
     #
     # Crear gráfico de valores determinísticos pronosticados
     #
+    
+    if ( "det.fcst" %in% output_plots ) {
     
     logger::log_info(glue::glue("Inicia el graficado del Pronóstico Determinístico para el año: {data_year}"))
     
@@ -585,11 +631,15 @@ for ( i in 1:nrow(base_files) ) {
         dry_mask_df = dry_mask_trgt_months,
         save_map = TRUE)
     }
+    
+    }  # fin del if que genera gráficos determinísticos
   
   
     #
     # Crear gráfico de valores probabilísticos pronosticados
     #
+    
+    if ( "prob.fcst" %in% output_plots ) {
     
     logger::log_info(glue::glue("Inicia el graficado del Pronóstico Probabilístico para el año: {data_year}"))
     
@@ -671,12 +721,14 @@ for ( i in 1:nrow(base_files) ) {
         save_map = TRUE)
     }
     
+    }  # fin del if que genera gráficos probabilísticos
+    
     
     #
     # Crear gráfico de valores pronosticados antes de ser calibrados
     #
     
-    if ( !is.null(datos_entrada$uncalibrated_fcst_data) ) {
+    if ( "uncal.fcst" %in% output_plots && !is.null(datos_entrada$uncalibrated_fcst_data) ) {
       
       logger::log_info(glue::glue("Inicia el graficado del Pronóstico sin Calibrar para el año: {data_year}"))
       

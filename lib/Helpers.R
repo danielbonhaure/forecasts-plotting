@@ -3,7 +3,7 @@
 library(dplyr, quietly=TRUE)
 
 # Verificar que estén instalados los paquetes necesarios
-packages <- c("R6", "ncdf4", "lubridate", "stringr")
+packages <- c("R6", "ncdf4", "lubridate", "stringr", "purrr")
 for ( pkg in packages )
   if ( ! pkg %in% rownames(installed.packages()) )
     stop(paste("Package", pkg,"is not installed"))
@@ -16,10 +16,13 @@ for ( pkg in packages )
 
 # Crear una secuencia/rango circular
 crange <- function(start, stop, modulo) {
-  if (start > stop)
-    return ( c(seq(start, modulo), seq(1, stop)) )
-  else
-    return ( seq(start, stop) )
+  if (start > stop) {
+    resp <- c(seq(start, modulo), seq(1, stop))
+  } else {
+    resp <- seq(start, stop)
+  }
+  resp <- purrr::map_dbl(resp, ~ ifelse(.x > 12, .x %% 12, .x))
+  return (resp)
 }
 
 

@@ -19,6 +19,9 @@ images:
   crc-sas: "/data/images/logo-crcsas.png"
 
 output_langs: ["en", "es", "pt"]
+output_plots: ["prob.fcst"]  # ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst"]
+output_leadtimes: [1]  # [1, 2, 3, 4, 5, 6, 7]
+output_trgt_type: ["trimesters"]  # ["trimesters", "months"]
 
 acc-cpt:  
   variables: ["prcp", "t2m"]
