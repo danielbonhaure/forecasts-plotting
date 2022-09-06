@@ -17,7 +17,7 @@ getScriptPath <- function(){
     stop("Can't determine script dir: more than one '--file' argument detected")
   return(script.dir)
 }
-#setwd( getScriptPath() )
+setwd( getScriptPath() )
 
 
 # ii. Borrar objetos existentes en el ambiente
@@ -377,9 +377,13 @@ for ( i in 1:nrow(base_files) ) {
   corr_df <- corr_df %>%
     { if ( base_file$obs_data_source == "chirps" )
         dplyr::mutate(.,
-          value = ifelse(latitude < -46, NA_integer_, value),
-          value = unname(value))
+          value = ifelse(latitude < -46, NA_integer_, value))
       else . }
+  
+  # Aplicar unname a todas las columnas porque las columnas de 
+  # tipo named causan errores el graficar.
+  corr_df <- corr_df %>% 
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
   
   # Definir paleta de colores
   red_plt  <- head(rev(RColorBrewer::brewer.pal(3, 'Reds')), 2)
@@ -456,9 +460,13 @@ for ( i in 1:nrow(base_files) ) {
     anom_df <- anom_df %>%
       { if ( base_file$obs_data_source == "chirps" )
           dplyr::mutate(.,
-            value = ifelse(latitude < -46, NA_integer_, value),
-            value = unname(value))
+            value = ifelse(latitude < -46, NA_integer_, value))
         else . }
+    
+    # Aplicar unname a todas las columnas porque las columnas de 
+    # tipo named causan errores el graficar.
+    anom_df <- anom_df %>% 
+      dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
     
     # Definir paleta de colores
     if (base_file$variable == 'prcp') {
@@ -525,9 +533,13 @@ for ( i in 1:nrow(base_files) ) {
     det_fcst_df <- det_fcst_df %>%
       { if ( base_file$obs_data_source == "chirps" )
         dplyr::mutate(.,
-          value = ifelse(latitude < -46, NA_integer_, value),
-          value = unname(value))
+          value = ifelse(latitude < -46, NA_integer_, value))
         else . }
+    
+    # Aplicar unname a todas las columnas porque las columnas de 
+    # tipo named causan errores el graficar.
+    det_fcst_df <- det_fcst_df %>% 
+      dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
     
     # Obtener la cantidad de meses objetivo (3 para seasonal y 1 para monthly)
     n_trgt_months <- stringr::str_split(base_file$target_months, '-') %>% 
@@ -606,13 +618,15 @@ for ( i in 1:nrow(base_files) ) {
     prob_fcst_df <- prob_fcst_df %>%
       { if ( base_file$obs_data_source == "chirps" )
           dplyr::mutate(.,
-            below_col = ifelse(latitude < -46, NA_integer_, below_col),
-            below_col = unname(below_col),
-            normal_col = ifelse(latitude < -46, NA_integer_, normal_col),
-            normal_col = unname(normal_col),
-            above_col = ifelse(latitude < -46, NA_integer_, above_col),
-            above_col = unname(above_col))
+            prob_below = ifelse(latitude < -46, NA_integer_, prob_below),
+            prob_normal = ifelse(latitude < -46, NA_integer_, prob_normal),
+            prob_above = ifelse(latitude < -46, NA_integer_, prob_above))
         else . }
+    
+    # Aplicar unname a todas las columnas porque las columnas de 
+    # tipo named causan errores el graficar.
+    prob_fcst_df <- prob_fcst_df %>% 
+      dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
     
     # Definir paleta de colores de la NOAA
     # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
