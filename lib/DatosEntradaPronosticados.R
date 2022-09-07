@@ -663,13 +663,13 @@ FcstProbabilisticData <- R6::R6Class(
                               above_col = NULL) {
       # Algunas veces se ejcuta esté método como método de clase
       if ( is.null(prob_data_df) ) {
-        prob_data_df <- self$data
+        data_df <- self$data
         below_col <- private$pv_below_col
         normal_col <- private$pv_normal_col
         above_col <- private$pv_above_col
       }
-      # Definir la categoría de cada fila en prob_data_df
-      prob_data_df <- prob_data_df %>%
+      # Definir la categoría de cada fila en data_df
+      data_df <- data_df %>%
         dplyr::mutate(category = dplyr::case_when(
           (!!as.name(above_col) > 
              !!as.name(normal_col) & 
@@ -705,7 +705,7 @@ FcstProbabilisticData <- R6::R6Class(
           category = factor(category, levels = c("below", "normal", "above"))
         )
       # Reportar casos en los que no se pudo determinar la categoría
-      casos_con_below_y_above_superiores <- prob_data_df %>% 
+      casos_con_below_y_above_superiores <- data_df %>% 
         dplyr::mutate(category = dplyr::case_when(
           (!!as.name(below_col) > 
              !!as.name(normal_col) & 
@@ -720,11 +720,11 @@ FcstProbabilisticData <- R6::R6Class(
       
       # Asignar valor a self$data solo si prob_data_df es NULL
       if ( is.null(prob_data_df) ) {
-        self$data <- prob_data_df
+        self$data <- data_df
       }
       
       # Retornar resultado
-      return ( prob_data_df )
+      return ( data_df )
     }
   ),
   private = list(
