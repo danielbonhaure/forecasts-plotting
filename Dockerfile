@@ -164,7 +164,8 @@ RUN adduser $NON_ROOT_USR sudo
 RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/plotter
 
 # Setup cron for run once a month
-RUN (echo "0 12 18 * * /usr/bin/Rscript /opt/plotter/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+ARG CRON_TIME_STR="0 12 18 * *"
+RUN (echo "${CRON_TIME_STR} /usr/bin/Rscript /opt/plotter/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
@@ -187,6 +188,7 @@ USER $NON_ROOT_USR
 #        --build-arg NON_ROOT_PWD=nonroot \
 #        --build-arg NON_ROOT_UID=$(stat -c "%u" .) \
 #        --build-arg NON_ROOT_GID=$(stat -c "%g" .) \
+#        --build-arg CRON_TIME_STR="0 12 18 * *" \
 #        --tag plotter:latest .
 
 # CORRER OPERACIONALMENTE CON CRON
