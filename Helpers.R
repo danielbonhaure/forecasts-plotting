@@ -3,7 +3,10 @@
 library(dplyr, quietly=TRUE)
 
 # Verificar que estén instalados los paquetes necesarios
-packages <- c("R6", "stringr", "htmltools", "htmlwidgets", "here")
+packages <- c("R6", "stringr", "htmltools", "htmlwidgets", "here", 
+              "automap", "leaflet", "leaflet.extras2", "sf", "logger",
+              "tibble", "purrr", "gstat", "metR", "RCurl", "viridis",
+              "stats", "glue", "tools", "leafem")
 for ( pkg in packages )
   if ( ! pkg %in% rownames(installed.packages()) )
     stop(paste("Package", pkg,"is not installed"))
@@ -157,7 +160,7 @@ InterpolationHelper <- R6::R6Class(
       
       # Se deben eliminar los NA para poder crear los variogramas
       datos_df <- data_df %>%
-        dplyr::filter(dplyr::across(cols_to_interp, ~ !is.na(.)))
+        dplyr::filter(dplyr::across(dplyr::any_of(cols_to_interp), ~ !is.na(.)))
       
       # Los variogramas se crean usando objetos sp, para crearlos primero
       # es necesario crear un objeto sf
@@ -464,7 +467,7 @@ PlotsHelper <- R6::R6Class(
       return ( m )
     },
     graficar_mapa_prob = function(data_df, gridded_data, spatial_domain,
-                                  main_title, legend_tittle, lang, 
+                                  main_title, legend_title, lang, 
                                   output_file_abspath, dry_mask_df,
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
@@ -722,12 +725,12 @@ PlotsHelper <- R6::R6Class(
       issued <- switch(lang, "en" = "Issued", 
                        "es" = "Emitido",
                        "pt" = "Emitido")
-      calibrate <- switch(lang, "en" = "calibrated forecast", 
-                          "es" = "pronóstico calibrado",
-                          "pt" = "previsão calibrada")
-      uncalibrate <- switch(lang, "en" = "uncalibrated forecast", 
-                            "es" = "pronóstico no calibrado",
-                            "pt" = "previsão não calibrada")
+      calibrated <- switch(lang, "en" = "calibrated forecast", 
+                           "es" = "pronóstico calibrado",
+                           "pt" = "previsão calibrada")
+      uncalibrated <- switch(lang, "en" = "uncalibrated forecast", 
+                             "es" = "pronóstico no calibrado",
+                             "pt" = "previsão não calibrada")
       
       # Definir título real
       if (data_type == "anom") {

@@ -352,6 +352,8 @@ FcstDeterministicData <- R6::R6Class(
           lookup[["latitude"]] <- private$pv_latitude_var
           lookup[["init_time"]] <- private$pv_time_var
           lookup[[self$variable]] <- private$pv_value_var
+          lookup <- unlist(
+            lookup, recursive = TRUE, use.names = TRUE)
           # Renombrar y Seleccionar columnas
           current_file_data <- current_file_data %>%
             dplyr::rename(dplyr::any_of(lookup)) %>%
@@ -795,6 +797,8 @@ FcstProbabilisticData <- R6::R6Class(
           lookup[["init_time"]] <- private$pv_time_var
           lookup[["category"]] <- private$pv_categories_var
           lookup[["value"]] <- private$pv_value_var
+          lookup <- unlist(
+            lookup, recursive = TRUE, use.names = TRUE)
           # Renombrar y Seleccionar columnas
           current_file_data <- current_file_data %>%
             dplyr::rename(dplyr::any_of(lookup)) %>%

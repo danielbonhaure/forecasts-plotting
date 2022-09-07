@@ -36,8 +36,8 @@ for (pack in list.of.packages) {
 
 # v. Verificar si están instalados los paquetes necesarios
 list.of.packages <- c("sf", "sp", "stringr", "logger", "tibble", "tools",
-                      "RColorBrewer", "grDevices", "rlang", "purrr", 
-                      "viridis", "glue", "here")
+                      "RColorBrewer", "grDevices", "rlang", "purrr", "rlang", 
+                      "viridis", "glue", "here", "lubridate", "tidync")
 for (pack in list.of.packages) {
   if(pack %in% rownames(installed.packages()) == FALSE) {
     stop(paste0("Paquete no encontrado: ", pack))
@@ -471,14 +471,6 @@ for ( i in 1:nrow(base_files) ) {
   
   for (data_year in anhos_pronosticados) {
     
-    #
-    # Crear gráfico de anomalías
-    #
-    
-    if ( "anom" %in% output_plots ) {
-    
-    logger::log_info(glue::glue("Inicia el graficado de las Anomalías para el año: {data_year}"))
-    
     # Determinar si los datos forman una grilla regular. Esto se debe
     # hacer antes de exluir puntos fuera del crcsas, en realidad, antes
     # de excluir cualquier punto en los datos.
@@ -490,6 +482,14 @@ for ( i in 1:nrow(base_files) ) {
       points_df = datos_entrada$pred_prob_fcst_data$data %>%
         dplyr::filter(year == data_year) %>%
         dplyr::select(longitude, latitude))
+    
+    #
+    # Crear gráfico de anomalías
+    #
+    
+    if ( "anom" %in% output_plots ) {
+    
+    logger::log_info(glue::glue("Inicia el graficado de las Anomalías para el año: {data_year}"))
     
     # Definir df con los datos a graficar
     anom_df <- datos_entrada$pred_det_fcst_data$data %>%
@@ -542,7 +542,7 @@ for ( i in 1:nrow(base_files) ) {
         data_df = anom_df, 
         gridded_data = det_gridded_data,
         main_title = PlotsHelper$definir_titulo("anom", base_file, lang, data_year), 
-        legend_title <- PlotsHelper$definir_titulo_leyenda("anom", base_file, lang), 
+        legend_title = PlotsHelper$definir_titulo_leyenda("anom", base_file, lang), 
         lang = lang,
         spatial_domain = list(
           nla = max(anom_df$latitude),
@@ -621,7 +621,7 @@ for ( i in 1:nrow(base_files) ) {
         data_df = det_fcst_df, 
         gridded_data = det_gridded_data,
         main_title = PlotsHelper$definir_titulo("det.fcst", base_file, lang, data_year), 
-        legend_title <- PlotsHelper$definir_titulo_leyenda("det.fcst", base_file, lang), 
+        legend_title = PlotsHelper$definir_titulo_leyenda("det.fcst", base_file, lang), 
         lang = lang,
         spatial_domain = list(
           nla = max(det_fcst_df$latitude),
@@ -708,7 +708,7 @@ for ( i in 1:nrow(base_files) ) {
         data_df = prob_fcst_df, 
         gridded_data = prob_gridded_data,
         main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
-        legend_title <- PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
+        legend_title = PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
         lang = lang,
         spatial_domain = list(
           nla = max(prob_fcst_df$latitude),
@@ -775,7 +775,7 @@ for ( i in 1:nrow(base_files) ) {
           data_df = uncal_fcst_df, 
           gridded_data = uncal_gridded_data,
           main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, lang, data_year), 
-          legend_title <- PlotsHelper$definir_titulo_leyenda("uncal.fcst", base_file, lang), 
+          legend_title = PlotsHelper$definir_titulo_leyenda("uncal.fcst", base_file, lang), 
           lang = lang,
           spatial_domain = list(
             nla = max(uncal_fcst_df$latitude),
