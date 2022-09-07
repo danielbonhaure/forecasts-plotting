@@ -25,8 +25,8 @@ output_trgt_type: ["trimesters"]  # ["trimesters", "months"]
 
 acc-cpt:  
   variables: ["prcp", "t2m"]
-  modelos: ["ecmwf", "nmme", "nasa"]
-  fuentes: ["chirps", "era5-land", "crcsas"]
+  modelos: ["ecmwf", "nmme"]  # ["ecmwf", "nmme", "nasa"]
+  fuentes: ["chirps", "era5-land"]  # ["chirps", "era5-land", "crcsas"]
   input_folders:
     observed_data: "/data/acc-cpt/input/predictands"
     uncalibrated_data: "/data/acc-cpt/input/predictors"
