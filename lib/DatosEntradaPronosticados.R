@@ -661,7 +661,10 @@ FcstProbabilisticData <- R6::R6Class(
                               below_col = NULL,
                               normal_col = NULL, 
                               above_col = NULL) {
-      # Algunas veces se ejcuta esté método como método de clase
+      data_df <- prob_data_df
+      # Cuando prob_data_df es NULL, el método fue invocado
+      # por una instancia de la clase, por lo tanto, es self$data
+      # el dataframe al cual hay que agregar las categorías
       if ( is.null(prob_data_df) ) {
         data_df <- self$data
         below_col <- private$pv_below_col

@@ -61,8 +61,8 @@ logger::log_info('Finaliza operación sf::st_buffer sobre el shp del CRC-SAS')
 
 # Color para NA en mapas
 na_color <- "#5C5C5C"
-na_color_prob <- "#8eb148"
-mask_color <- "#f2c0fe"
+na_color_prob <- "#65745b"
+mask_color <- "#dfd8bf"
 
 # Determinar el mejor valor para el parámetro digits de la función round
 round_digits <- function(valor) {
@@ -468,7 +468,7 @@ PlotsHelper <- R6::R6Class(
                      colors_above,
                      '#FFFFFF;visibility: hidden;',
                      purrr::map_chr(
-                       .x = if (!is.null(dry_mask_df)) c(na_color, mask_color) else na_color, 
+                       .x = if (!is.null(dry_mask_df)) c(na_color_prob, mask_color) else na_color_prob, 
                        .f = ~ glue::glue('{.x};border-radius: 25px;margin-top:3px;'))),
           labels = c("<b style='margin-left:-20px'> Below Normal </b>", "",
                      purrr::map_chr(
