@@ -23,6 +23,11 @@ global_config <- Config$new(here::here('config.yaml'))
 
 # Obtener condiciones inciales
 global_ic <- global_config$get_config('initial_conditions')
+if ( is.null(global_ic) ) {
+  global_ic <- list()
+  global_ic$month <- lubridate::month(lubridate::now())
+  global_ic$year <- lubridate::year(lubridate::now())
+}
 
 
 #
@@ -32,10 +37,13 @@ global_ic <- global_config$get_config('initial_conditions')
 
 # Crear una secuencia/rango circular
 crange <- function(start, stop, modulo) {
-  if (start > stop)
-    return ( c(seq(start, modulo), seq(1, stop)) )
-  else
-    return ( seq(start, stop) )
+  if (start > stop) {
+    resp <- c(seq(start, modulo), seq(1, stop))
+  } else {
+    resp <- seq(start, stop)
+  }
+  resp <- purrr::map_dbl(resp, ~ ifelse(.x > 12, .x %% 12, .x))
+  return (resp)
 }
 
 

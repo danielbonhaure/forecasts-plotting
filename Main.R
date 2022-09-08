@@ -70,7 +70,7 @@ global_config <- Config$new(here::here('config.yaml'))
 
 # Obtener condiciones inciales
 global_ic <- global_config$get_config('initial_conditions')
-if  ( is.null(global_ic) ) {
+if ( is.null(global_ic) ) {
   global_ic <- list()
   global_ic$month <- lubridate::month(lubridate::now())
   global_ic$year <- lubridate::year(lubridate::now())
@@ -96,107 +96,133 @@ output_plots <- global_config$get_config("output_plots")
 # -----------------------------------------------------------------------------#
 # ---- PASO 4. Identificar archivos a graficar -----
 
+
+# Definir estructura
+base_files_struct <- tibble::tibble(
+  type = character(),
+  variable = character(),
+  basename = character(),
+  det_fcst_file = character(),
+  det_hcst_file = character(),
+  prob_fcst_file = character(),
+  prob_hcst_file = character(),
+  obs_file = character(),
+  uncalibrated_fcst_file = character(),
+  hcst_first_year = numeric(),
+  hcst_last_year = numeric(),
+  target_months = character(),
+  obs_data_source = character()
+)
+
 # Identificar archivos ACC-CPT
-cpt_base_files <-
-  tibble::tibble(
-    type = 'acc-cpt',
-    basename = list.files(
-      path = config_cpt$input_folders$calibrated_data$forecasts, 
-      pattern = cpt_files_regex,
-      full.names = FALSE) %>% tools::file_path_sans_ext(),
-    variable = stringr::str_extract(basename, cpt_regex_variables)
-  ) %>%
-  dplyr::select(
-    type, variable, basename
-  ) %>%
-  dplyr:: mutate(
-    det_fcst_file = paste0(basename, '_forecast.nc'),
-    det_hcst_file = paste0(basename, '_hindcast.nc'),
-    prob_fcst_file = paste0(basename, '_prob_forecast.nc'),
-    prob_hcst_file = paste0(basename, '_prob_hindcast.nc')
-  ) %>%
-  dplyr::mutate(
-    obs_file = paste0(
-      stringr::str_extract(basename, cpt_regex_variables), '_', 
-      stringr::str_extract(basename, cpt_regex_fuente_datos), '_',
-      stringr::str_extract(basename, cpt_regex_months), '.nc')
-  ) %>% 
-  dplyr::mutate(
-    uncalibrated_fcst_file = paste0(
-      stringr::str_extract(basename, cpt_regex_modelos), '_',
-      stringr::str_extract(basename, cpt_regex_pre_variables), '_',
-      stringr::str_extract(basename, cpt_regex_init_month), '_',
-      stringr::str_extract(basename, cpt_regex_months), '_',
-      stringr::str_extract(basename, cpt_regex_hcst_years), '_',
-      stringr::str_extract(basename, cpt_regex_fcst_years), '_1.nc')
-  ) %>% 
-  dplyr::rowwise() %>% dplyr::mutate(
-    hcst_first_year = stringr::str_split(
-      stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
-      unlist() %>% dplyr::first() %>% as.numeric(),
-    hcst_last_year = stringr::str_split(
-      stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
-      unlist() %>% dplyr::last() %>% as.numeric(),
-    target_months = ifelse(
-      stringr::str_detect(stringr::str_extract(basename, cpt_regex_months), '-'),
-      yes = paste(crange(global_ic$month+1, global_ic$month+3, 12), collapse='-'),
-      no = stringr::str_extract(basename, cpt_regex_months))
-  ) %>% dplyr::ungroup() %>%
-  dplyr::mutate(
-    obs_data_source = stringr::str_extract(basename, cpt_regex_fuente_datos)
-  )
+cpt_base_files <- list.files(
+  path = config_cpt$input_folders$calibrated_data$forecasts, 
+  pattern = cpt_files_regex,
+  full.names = FALSE) %>% tools::file_path_sans_ext()
+if ( length(cpt_base_files) == 0 ) {
+  cpt_base_files <- base_files_struct
+} else {
+  cpt_base_files <- cpt_base_files %>% 
+    tibble::as_tibble_col("basename") %>%
+    dplyr::mutate(
+      type = 'acc-cpt',
+      variable = stringr::str_extract(basename, cpt_regex_variables)
+    ) %>%
+    dplyr:: mutate(
+      det_fcst_file = paste0(basename, '_forecast.nc'),
+      det_hcst_file = paste0(basename, '_hindcast.nc'),
+      prob_fcst_file = paste0(basename, '_prob_forecast.nc'),
+      prob_hcst_file = paste0(basename, '_prob_hindcast.nc')
+    ) %>%
+    dplyr::mutate(
+      obs_file = paste0(
+        stringr::str_extract(basename, cpt_regex_variables), '_', 
+        stringr::str_extract(basename, cpt_regex_fuente_datos), '_',
+        stringr::str_extract(basename, cpt_regex_months), '.nc')
+    ) %>% 
+    dplyr::mutate(
+      uncalibrated_fcst_file = paste0(
+        stringr::str_extract(basename, cpt_regex_modelos), '_',
+        stringr::str_extract(basename, cpt_regex_pre_variables), '_',
+        stringr::str_extract(basename, cpt_regex_init_month), '_',
+        stringr::str_extract(basename, cpt_regex_months), '_',
+        stringr::str_extract(basename, cpt_regex_hcst_years), '_',
+        stringr::str_extract(basename, cpt_regex_fcst_years), '_1.nc')
+    ) %>% 
+    dplyr::rowwise() %>% dplyr::mutate(
+      hcst_first_year = stringr::str_split(
+        stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
+        unlist() %>% dplyr::first() %>% as.numeric(),
+      hcst_last_year = stringr::str_split(
+        stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
+        unlist() %>% dplyr::last() %>% as.numeric(),
+      target_months = ifelse(
+        stringr::str_detect(stringr::str_extract(basename, cpt_regex_months), '-'),
+        yes = paste(crange(global_ic$month+1, global_ic$month+3, 12), collapse='-'),
+        no = stringr::str_extract(basename, cpt_regex_months)) %>% as.character()
+    ) %>% dplyr::ungroup() %>%
+    dplyr::mutate(
+      obs_data_source = stringr::str_extract(basename, cpt_regex_fuente_datos)
+    ) %>%
+    dplyr::select(base_files_struct %>% names())
+}
 
 # Identificar Archivos EREG-Climax
-ereg_base_files <-
-  tibble::tibble(
-    type = 'ereg',
-    basename = list.files(
-      path = config_ereg$input_folders$calibrated_data$forecasts, 
-      pattern = ereg_files_regex,
-      full.names = FALSE) %>% tools::file_path_sans_ext(),
-    variable = dplyr::case_when(
-      stringr::str_extract(basename, ereg_regex_variables) == 'prec' ~ 'prcp',
-      stringr::str_extract(basename, ereg_regex_variables) == 'tref' ~ 't2m',
-      TRUE ~ NA_character_)
-  ) %>%
-  dplyr::select(
-    type, variable, basename
-  ) %>%
-  dplyr:: mutate(
-    det_fcst_file = paste0('determin_', basename, '.nc'),
-    det_hcst_file = paste0('determin_', stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc'),
-    prob_fcst_file = paste0(basename, '.nc'),
-    prob_hcst_file = paste0(stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc')
-  ) %>%
-  dplyr::rowwise() %>% dplyr::mutate(
-    trimester = stringr::str_extract(basename, ereg_regex_months),
-    obs_file = paste0(
-      'obs_',
-      stringr::str_extract(basename, ereg_regex_variables), '_', 
-      ifelse(
+ereg_base_files <- list.files(
+  path = config_ereg$input_folders$calibrated_data$forecasts, 
+  pattern = ereg_files_regex,
+  full.names = FALSE) %>% tools::file_path_sans_ext()
+if ( length(ereg_base_files) == 0 ) {
+  ereg_base_files <- base_files_struct
+} else {
+  ereg_base_files <- ereg_base_files %>% 
+    tibble::as_tibble_col("basename") %>%
+    dplyr::mutate(
+      type = 'ereg',
+      variable = dplyr::case_when(
+        stringr::str_extract(basename, ereg_regex_variables) == 'prec' ~ 'prcp',
+        stringr::str_extract(basename, ereg_regex_variables) == 'tref' ~ 't2m',
+        TRUE ~ NA_character_)
+    ) %>%
+    dplyr:: mutate(
+      det_fcst_file = paste0('determin_', basename, '.nc'),
+      det_hcst_file = paste0('determin_', stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc'),
+      prob_fcst_file = paste0(basename, '.nc'),
+      prob_hcst_file = paste0(stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc')
+    ) %>%
+    dplyr::mutate(
+      trimester = stringr::str_extract(basename, ereg_regex_months)) %>%
+    dplyr::rowwise(.) %>% dplyr::mutate(
+      obs_file = paste0(
+        'obs_',
+        stringr::str_extract(basename, ereg_regex_variables), '_', 
+        ifelse(
+          all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
+          yes=1982, no=1983), '_',
+        stringr::str_extract(basename, ereg_regex_months), 
+        '.nc'),
+      uncalibrated_fcst_file = NA_character_,
+      hcst_first_year = ifelse(
         all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-        yes=1982, no=1983), '_',
-      stringr::str_extract(basename, ereg_regex_months), 
-      '.nc'),
-    uncalibrated_fcst_file = NULL,
-    hcst_first_year = ifelse(
-      all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-      yes=1982, no=1983),
-    hcst_last_year = ifelse(
-      all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-      yes=2010, no=2011),
-    target_months = paste(
-      MonthsHelper$trimester_to_seq(trimester), collapse='-')
-  ) %>% dplyr::select(-trimester) %>% dplyr::ungroup() %>%
-  dplyr::mutate(
-    obs_data_source = ifelse(variable == "prcp", "cpc-cmap-urd", "ghcn_cams")
-  )
+        yes=1982, no=1983),
+      hcst_last_year = ifelse(
+        all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
+        yes=2010, no=2011),
+      target_months = paste(
+        MonthsHelper$trimester_to_seq(trimester), collapse='-') 
+    ) %>% dplyr::select(-trimester) %>% dplyr::ungroup() %>% 
+    dplyr::mutate(
+      obs_data_source = ifelse(variable == "prcp", "cpc-cmap-urd", "ghcn_cams") %>% 
+        as.character()) %>%
+    dplyr::select(base_files_struct %>% names())
+}
+
 
 # Unir archivos identificados en un único dataframe
 all_base_files <- dplyr::bind_rows(list(cpt_base_files, ereg_base_files))
 
 # Definir el df final, que contendrá los archivos a ser graficados
-base_files <- tibble::tibble()
+base_files <- base_files_struct
 
 # Filtrar archivos por meses
 if ( 'months' %in% global_config$get_config('output_trgt_type') ) {
@@ -238,7 +264,16 @@ rm(all_base_files, cpt_base_files, ereg_base_files); invisible(gc())
 # -----------------------------------------------------------------------------#
 # ---- PASO 5. Graficar -----
 
-for ( i in 1:nrow(base_files) ) {
+# Definir índices a iterar
+indices <- c()
+if ( nrow(base_files) > 0 ) {
+  indices <- seq(nrow(base_files))
+} else {
+  logger::log_info('No se encontraron archivos a procesar!')
+}
+
+# Iterar archivos por índices
+for ( i in indices ) {
   
   # Extraer datos sobre el/los archivo/s a graficar
   base_file <- base_files[i,]
