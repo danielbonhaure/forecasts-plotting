@@ -453,3 +453,103 @@ InterpolationHelper$interp_bilinear = function(...) {
 }
 
 
+#
+#
+#
+
+
+DryMaskHelper <- R6::R6Class(
+  classname = "DryMaskHelper",
+  public = list(
+    read_data = function(dry_mask_file, trgt_months) {
+      
+      # Leer archivo con mascara seca
+      dry_mask_df = tidync::tidync(dry_mask_file) %>% 
+        tidync::hyper_tibble(na.rm = FALSE) %>%
+        dplyr::rename(
+          longitude = X, latitude = Y) %>%
+        dplyr::mutate(
+          longitude = longitude - 360,
+          dry_month = as.logical(prec),
+          must_be_masked = dry_month) %>%
+        dplyr::select(
+          longitude, latitude, month, must_be_masked)
+      
+      # Recorrer el/los meses objetivo (target month) y marcar punto
+      # como "a ser enmscarado" cuando al menos uno de los meses sea seco.
+      dry_mask_trgt_months <- 
+        purrr::reduce(
+          .x = purrr::map(
+            .x = trgt_months,
+            .f = function(m) {
+              dry_mask_df %>% 
+                dplyr::filter(month == m) %>%
+                dplyr::rename(!!paste0('must_be_masked.', m) := must_be_masked) %>%
+                dplyr::select(-month)
+            }),
+          .f = dplyr::inner_join,
+          by = c("longitude", "latitude")) %>%
+        dplyr::mutate(
+          must_be_masked = if_any(dplyr::starts_with("must_be_masked."))) %>%
+        dplyr::select(longitude, latitude, must_be_masked)
+      
+      # Retornar los datos agrupados
+      return ( dry_mask_trgt_months )
+    },
+    interpolate = function(dry_mask_df, dest_points_df, spatial_domain ) {
+      
+      # Reducir cantidad de puntos, excluir puntos fuera del dominio espacial
+      dry_mask_df <- dry_mask_df %>%
+        dplyr::filter(longitude >= spatial_domain$wlo - 2, 
+                      longitude <= spatial_domain$elo + 2, 
+                      latitude <= spatial_domain$nla + 2, 
+                      latitude >= spatial_domain$sla - 2)
+      
+      # Definir valores que permiten definir la nueva grilla
+      trgt_lons <- dest_points_df$longitude
+      trgt_lats <- dest_points_df$latitude
+      dist_between_lon <- min(spatial_dist(trgt_lons)) / 2
+      dist_between_lat <- min(spatial_dist(trgt_lats)) / 2
+      delta <- min(dist_between_lon, dist_between_lat)
+      
+      # Definir nueva grilla
+      new_grid_sf <- tibble::as_tibble(
+        expand.grid(longitude = seq(from = min(trgt_lons) - delta, 
+                                    to = max(trgt_lons) + delta, 
+                                    by = delta*2), 
+                    latitude = seq(from = min(trgt_lats) - delta, 
+                                   to = max(trgt_lats) + delta, 
+                                   by = delta*2))) %>%
+        sf::st_as_sf(coords = c("longitude", "latitude"), 
+                     remove = FALSE, crs = 4326)
+      
+      # Interpolar resultados
+      new_dry_mask_df <- 
+        InterpolationHelper$interp_bilinear(
+          data_df = dry_mask_df,
+          cols_to_interp = "must_be_masked",
+          new_points = new_grid_sf) %>%
+        dplyr::mutate(
+          must_be_masked = dplyr::case_when(
+            must_be_masked < .5 ~ as.logical(0),
+            must_be_masked >= .5 ~ as.logical(1),
+            TRUE ~ NA
+          ))
+      
+      # Retornar máscara interpolada
+      return ( new_dry_mask_df )
+    }
+  ),
+  lock_objects = TRUE,
+  portable = TRUE,
+  lock_class = TRUE
+)
+# Declare class methods
+DryMaskHelper$read_data = function(...) {
+  DryMaskHelper$public_methods$read_data(...) 
+}
+DryMaskHelper$interpolate = function(...) {
+  DryMaskHelper$public_methods$interpolate(...) 
+}
+
+

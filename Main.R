@@ -306,83 +306,23 @@ for ( i in 1:nrow(base_files) ) {
     logger::log_info('Inicia obtención de la máscara a ser aplicada')
     
     # Leer archivo con mascara seca para EREG
-    dry_mask_df = tidync::tidync(config_ereg$dry_mask_file) %>% 
-      tidync::hyper_tibble(na.rm = FALSE) %>%
-      dplyr::rename(
-        longitude = X, latitude = Y) %>%
-      dplyr::mutate(
-        longitude = longitude - 360,
-        dry_month = as.logical(prec),
-        must_be_masked = dry_month) %>%
-      dplyr::select(
-        longitude, latitude, month, must_be_masked)
-    
-    # Recorrer el/los meses objetivo (target month) y marcar punto
-    # como "a ser enmscarado" cuando al menos uno de los meses sea seco.
-    dry_mask_trgt_months <- 
-      purrr::reduce(
-        .x = purrr::map(
-          .x = stringr::str_split(base_file$target_months, '-') %>% 
-            purrr::reduce(c),
-          .f = function(m) {
-            dry_mask_df %>% 
-              dplyr::filter(month == m) %>%
-              dplyr::rename(!!paste0('must_be_masked.', m) := must_be_masked) %>%
-              dplyr::select(-month)
-          }),
-        .f = dplyr::inner_join,
-        by = c("longitude", "latitude")) %>%
-      dplyr::mutate(
-        must_be_masked = if_any(dplyr::starts_with("must_be_masked."))) %>%
-      dplyr::select(longitude, latitude, must_be_masked)
-    
+    dry_mask_trgt_months <- DryMaskHelper$read_data(
+      dry_mask_file = config_ereg$dry_mask_file, 
+      trgt_months = base_file$target_months %>% 
+        stringr::str_split('-') %>% 
+        purrr::reduce(c))
     
     # Si la grilla de la máscara no coincide con la grilla de los datos
     # pronosticados, entonces se debe interpolar la máscara.
     if ( !are_points_joinables(new_grid_sf, dry_mask_trgt_months) ) {
       logger::log_info('Inicia interpolación de la máscara')
       
-      # Reducir cantidad de puntos, excluir puntos fuera del dominio espacial
-      dry_mask_trgt_months <- dry_mask_trgt_months %>%
-        dplyr::filter(longitude >= spatial_domain$wlo - 2, 
-                      longitude <= spatial_domain$elo + 2, 
-                      latitude <= spatial_domain$nla + 2, 
-                      latitude >= spatial_domain$sla - 2)
-      reduced_orig_dry_mask <- dry_mask_trgt_months %>% sf::st_as_sf(
-        coords = c("longitude", "latitude"), 
-        remove = FALSE, crs = 4326) 
-      
-      # Definir valores que permiten definir la nueva grilla
-      trgt_lons <- datos_entrada$pred_det_fcst_data$data$longitude
-      trgt_lats <- datos_entrada$pred_det_fcst_data$data$latitude
-      dist_between_lon <- min(spatial_dist(trgt_lons)) / 2
-      dist_between_lat <- min(spatial_dist(trgt_lats)) / 2
-      delta <- min(dist_between_lon, dist_between_lat)
-      
-      # Definir nueva grilla
-      new_grid_sf <- tibble::as_tibble(
-        expand.grid(longitude = seq(from = min(trgt_lons) - delta, 
-                                    to = max(trgt_lons) + delta, 
-                                    by = delta*2), 
-                    latitude = seq(from = min(trgt_lats) - delta, 
-                                   to = max(trgt_lats) + delta, 
-                                   by = delta*2))) %>%
-        sf::st_as_sf(coords = c("longitude", "latitude"), 
-                     remove = FALSE, crs = 4326)
-      
-      # Interpolar resultados
-      dry_mask_trgt_months <- 
-        InterpolationHelper$interp_bilinear(
-          data_df = dry_mask_trgt_months,
-          cols_to_interp = "must_be_masked",
-          new_points = new_grid_sf) %>%
-        dplyr::mutate(
-          must_be_masked = dplyr::case_when(
-            must_be_masked < .5 ~ as.logical(0),
-            must_be_masked >= .5 ~ as.logical(1),
-            TRUE ~ NA
-          )) %>%
-        exclude_points_outside_buffered_crcsas()
+      # Interpolar máscara
+      dry_mask_trgt_months <- DryMaskHelper$interpolate(
+        dry_mask_df = dry_mask_trgt_months,
+        dest_points_df = datos_entrada$pred_det_fcst_data$data,
+        spatial_domain = spatial_domain
+      ) %>% exclude_points_outside_buffered_crcsas()
       
     }  # fin de la interpolación
     
