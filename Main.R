@@ -310,8 +310,8 @@ for ( i in indices ) {
                    remove = FALSE, crs = 4326)
   } else {
     
-    delta <- ifelse(base_file$type == "ereg", .5, .25)
     data_df <- datos_entrada$pred_det_fcst_data$data
+    delta <- min(spatial_dist(data_df$longitude)) / 2
     
     new_grid_sf <- tibble::as_tibble(
       expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
