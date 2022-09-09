@@ -61,7 +61,7 @@ logger::log_info('Finaliza operación sf::st_buffer sobre el shp del CRC-SAS')
 
 # Color para NA en mapas
 na_color <- "#5C5C5C"
-na_color_prob <- "#65745b"
+na_color_prob <-"#745b6b" #"#65745b"
 mask_color <- "#dfd8bf"
 
 # Determinar el mejor valor para el parámetro digits de la función round
