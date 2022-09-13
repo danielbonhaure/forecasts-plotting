@@ -337,7 +337,8 @@ for ( i in indices ) {
   
   
   # Definir máscara cuando corresponda
-  if ( base_file$type == 'ereg' && config_ereg$apply_dry_mask ) {
+  if ( base_file$type == 'ereg' &&  base_file$variable == 'prcp' && config_ereg$apply_dry_mask ) {
+    
     logger::log_info('Inicia obtención de la máscara a ser aplicada')
     
     # Leer archivo con mascara seca para EREG
