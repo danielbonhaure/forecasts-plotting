@@ -11,6 +11,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # install OS packages
 RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
     apt-get -y -qq --no-install-recommends install \
         build-essential \
         # to install ncdf4
@@ -63,7 +64,8 @@ FROM r-base:4.1.2 AS r_image
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update &&\
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
     apt-get -y -qq --no-install-recommends install \
         # to be able to use ncdf4 (R)
         libnetcdf-dev \
