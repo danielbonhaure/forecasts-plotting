@@ -194,13 +194,7 @@ USER $NON_ROOT_USR
 #        --tag plotter:latest .
 
 # CORRER OPERACIONALMENTE CON CRON
-# docker run --name verify-pronos \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#        --volume <path-to-file>:/data/images/logo-crcsas.png \
-#        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
+# docker run --name plot-pronos \
 #        --volume <path-to-folder>:/data/acc-cpt/input/predictors \
 #        --volume <path-to-folder>:/data/acc-cpt/input/predictands \
 #        --volume <path-to-folder>:/data/acc-cpt/output \
@@ -209,17 +203,16 @@ USER $NON_ROOT_USR
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#        --detach plotter:latest
-
-# CORRER MANUALMENTE
-# docker run --name plot-pronos --rm \
-#        --volume <path-to-file>:/opt/plotter/config.yaml \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
 #        --volume <path-to-file>:/data/images/logo-crcsas.png \
 #        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
+#        --detach plotter:latest
+
+# CORRER MANUALMENTE
+# docker run --name plot-pronos \
 #        --volume <path-to-folder>:/data/acc-cpt/input/predictors \
 #        --volume <path-to-folder>:/data/acc-cpt/input/predictands \
 #        --volume <path-to-folder>:/data/acc-cpt/output \
@@ -227,5 +220,12 @@ USER $NON_ROOT_USR
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
 #        --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#        --detach plotter:latest /usr/bin/Rscript Main.R
+#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
+#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
+#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
+#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
+#        --volume <path-to-file>:/data/images/logo-crcsas.png \
+#        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
+#        --volume <path-to-file>:/opt/plotter/config.yaml \
+#        --rm plotter:latest /usr/bin/Rscript /opt/plotter/Main.R
 
