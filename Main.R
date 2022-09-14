@@ -659,7 +659,8 @@ for ( i in indices ) {
           dplyr::mutate(.,
             prob_below = ifelse(latitude < -46, NA_integer_, prob_below),
             prob_normal = ifelse(latitude < -46, NA_integer_, prob_normal),
-            prob_above = ifelse(latitude < -46, NA_integer_, prob_above))
+            prob_above = ifelse(latitude < -46, NA_integer_, prob_above),
+            category = ifelse(latitude < -46, NA_integer_, as.character(category)))
         else . }
     
     # Aplicar unname a todas las columnas porque las columnas de 

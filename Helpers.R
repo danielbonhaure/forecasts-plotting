@@ -187,7 +187,12 @@ PlotsHelper <- R6::R6Class(
       data_df <- data_df %>%
         dplyr::mutate(
           c_color = purrr::map_chr(
-            value, ~ get_value_color(.x, breaks, colors, na_color)) )
+            value, ~ get_value_color(.x, breaks, colors, na_color)),
+          label_msg = dplyr::case_when(
+            is.na(value) ~ switch(lang, "en" = "No data", 
+                                  "es" = "Sin datos", 
+                                  "pt" = "Sem dados"),
+            TRUE ~ as.character(auto_round(value)) ) )
       
       # Enmascarar con máscara seca si corresponde
       if ( !is.null(dry_mask_df) ) {
@@ -195,7 +200,12 @@ PlotsHelper <- R6::R6Class(
           dplyr::left_join(
             dry_mask_df, by = c("longitude", "latitude")) %>%
           dplyr::mutate(
-            c_color = ifelse(must_be_masked, mask_color, c_color)) %>%
+            c_color = ifelse(must_be_masked, mask_color, c_color),
+            label_msg = dplyr::case_when(
+              must_be_masked ~ switch(lang, "en" = "Masked, Dry Mask", 
+                                    "es" = "Enmascarado, Máscara Seca", 
+                                    "pt" = "Mascarado, Máscara Seca"),
+              TRUE ~ as.character(auto_round(value)) ) ) %>%
           dplyr::select(-must_be_masked)
       }
       
@@ -247,9 +257,9 @@ PlotsHelper <- R6::R6Class(
             stroke = FALSE,
             fillColor = ~ c_color,
             fillOpacity = 0.7,
-            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>Val: {auto_round(value)}</center>"),
-            label = ~ as.character(auto_round(value)))
+            popup = ~ glue::glue("<center>Lon: {longitude}, Lat: {latitude}</center>",
+                                 "<center>Val: {label_msg}</center>"),
+            label = ~ label_msg)
           else . } %>%
         { if ( !gridded_data ) 
           leaflet::addCircleMarkers(
@@ -261,9 +271,9 @@ PlotsHelper <- R6::R6Class(
             stroke = FALSE,
             fillColor = ~ c_color,
             fillOpacity = 0.7,
-            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>Val: {auto_round(value)}</center>"),
-            label = ~ as.character(auto_round(value)))
+            popup = ~ glue::glue("<center>Lon: {longitude}, Lat: {latitude}</center>",
+                                 "<center>Val: {label_msg}</center>"),
+            label = ~ label_msg)
           else . } %>%
         leaflet::addLegend(
           map = .,
@@ -285,7 +295,7 @@ PlotsHelper <- R6::R6Class(
               .x = breaks, 
               .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
             purrr::map_chr(
-              .x = if (!is.null(dry_mask_df)) c("NaN", "D.M.") else "NaN", 
+              .x = if (!is.null(dry_mask_df)) c("NaN", switch(lang, "en" ="D.M.", "es" = "M.S.", "pt" = "M.S.")) else "NaN", 
               .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
           className = "info legend principal",
@@ -325,24 +335,57 @@ PlotsHelper <- R6::R6Class(
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
                                   save_map = T) {
+      
+      # Definir texto a ser utilizados
+      txt_prob_below = switch(lang, "en" = "Prob. Below", 
+                              "es" = "Prob. Inferior",
+                              "pt" = "Prob. Debaixo")
+      txt_prob_normal = switch(lang, "en" = "Prob. Normal", 
+                               "es" = "Prob. Normal",
+                               "pt" = "Prob. Normal")
+      txt_prob_above = switch(lang, "en" = "Prob. Above", 
+                              "es" = "Prob. Superior",
+                              "pt" = "Prob. Acima")
+      no_cat_txt <- switch(lang, "en" = "No category", 
+                           "es" = "Sin categoría", 
+                           "pt" = "Sem categoria")
+      unknown_cat_txt <- switch(lang, "en" = "Unknown category!", 
+                                "es" = "Categoría desconocida!", 
+                                "pt" = "Categoria desconhecida!")
+      no_data_txt <- switch(lang, "en" = "No data", 
+                            "es" = "Sin datos", 
+                            "pt" = "Sem dados")
+      masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
+                           "es" = "Enmascarada, Máscara Seca", 
+                           "pt" = "Mascarada, Máscara Seca")
         
       # Determinar el color de cada celda
       data_df <- data_df %>%
         dplyr::mutate(
           c_color = dplyr::case_when(
             category == 'below' ~ purrr::map_chr(
-              .x = prob_below, 
+              .x = prob_below,
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_below, na_color_prob)),
             category == 'normal' ~ purrr::map_chr(
-              .x = prob_normal, 
+              .x = prob_normal,
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
             category == 'above' ~ purrr::map_chr(
-              .x = prob_above, 
+              .x = prob_above,
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_above, na_color_prob)),
             is.na(category) ~ purrr::map_chr(
-              .x = NA, 
+              .x = NA,
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
-            TRUE ~ NA_character_))
+            TRUE ~ NA_character_),
+          label_msg = dplyr::case_when(
+            category == 'below' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
+            category == 'normal' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
+            category == 'above' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
+            is.na(category) & (!is.na(prob_below) | !is.na(prob_normal) | !is.na(prob_above)) ~ no_cat_txt,
+            is.na(category) & is.na(prob_below) & is.na(prob_normal) & is.na(prob_above) ~ no_data_txt,
+            TRUE ~ unknown_cat_txt),
+          popup_msg = glue::glue("{txt_prob_below}: {ifelse(is.na(prob_below), no_data_txt, as.character(auto_round(prob_below)))} <br>",
+                                 "{txt_prob_normal}: {ifelse(is.na(prob_normal), no_data_txt, as.character(auto_round(prob_normal)))} <br>",
+                                 "{txt_prob_above}: {ifelse(is.na(prob_above), no_data_txt, as.character(auto_round(prob_above)))} <br>") )
       
       # Enmascarar con máscara seca si corresponde
       if ( !is.null(dry_mask_df) ) {
@@ -350,7 +393,15 @@ PlotsHelper <- R6::R6Class(
           dplyr::left_join(
             dry_mask_df, by = c("longitude", "latitude")) %>%
           dplyr::mutate(
-            c_color = ifelse(must_be_masked, mask_color, c_color)) %>%
+            c_color = ifelse(must_be_masked, mask_color, c_color),
+            label_msg = dplyr::case_when(
+              must_be_masked ~ glue::glue("Prob. {masked_txt}"),
+              TRUE ~ label_msg),
+            popup_msg = dplyr::case_when(
+              must_be_masked ~ glue::glue("{txt_prob_below}: {masked_txt} <br>",
+                                          "{txt_prob_normal}: {masked_txt} <br>",
+                                          "{txt_prob_above}: {masked_txt} <br>"),
+              TRUE ~ popup_msg)) %>%
           dplyr::select(-must_be_masked)
       }
       
@@ -362,17 +413,6 @@ PlotsHelper <- R6::R6Class(
         dist_between_lat <- ifelse(dist_between_lat > 2, 2, dist_between_lat)
         circle_radius <- min(c(dist_between_lon, dist_between_lat))
       }
-      
-      # Definir que mostrar en popup y label
-      txt_prob_below = switch(lang, "en" = "Prob. Below", 
-                              "es" = "Prob. Inferior",
-                              "pt" = "Prob. Debaixo")
-      txt_prob_normal = switch(lang, "en" = "Prob. Normal", 
-                               "es" = "Prob. Normal",
-                               "pt" = "Prob. Normal")
-      txt_prob_above = switch(lang, "en" = "Prob. Above", 
-                              "es" = "Prob. Superior",
-                              "pt" = "Prob. Acima")
       
       # Generar el gráfico
       css_fix_1 <- 
@@ -414,20 +454,9 @@ PlotsHelper <- R6::R6Class(
             stroke = FALSE,
             fillColor = ~ c_color,
             fillOpacity = 0.7,
-            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>{txt_prob_below}: {auto_round(prob_below)}</center>",
-                                 "<center>{txt_prob_normal}: {auto_round(prob_normal)}</center>",
-                                 "<center>{txt_prob_above}: {auto_round(prob_above)}</center>"),
-            label = ~ dplyr::case_when(
-              category == 'below' ~ glue::glue("{txt_prob_below}: {auto_round(prob_below)}"),
-              category == 'normal' ~ glue::glue("{txt_prob_normal}: {auto_round(prob_normal)}"),
-              category == 'above' ~ glue::glue("{txt_prob_above}: {auto_round(prob_above)}"),
-              is.na(category) ~ switch(lang, "en" = "No data", 
-                                       "es" = "Sin datos", 
-                                       "pt" = "Não há dados"),
-              TRUE ~ switch(lang, "en" = "Unknown category!", 
-                            "es" = "Categoría desconocida!", 
-                            "pt" = "Categoria desconhecida!")))
+            popup = ~ glue::glue("<center>Lon: {longitude}, Lat: {latitude}</center> 
+                                 {popup_msg}"),
+            label = ~ label_msg)
           else . } %>%
         { if ( !gridded_data ) 
           leaflet::addCircleMarkers(
@@ -437,20 +466,9 @@ PlotsHelper <- R6::R6Class(
             stroke = FALSE,
             fillColor = ~ c_color,
             fillOpacity = 0.7,
-            popup = ~ glue::glue("Lon: {longitude}, Lat: {latitude} <br> ",
-                                 "<center>{txt_prob_below}: {auto_round(prob_below)}</center>",
-                                 "<center>{txt_prob_normal}: {auto_round(prob_normal)}</center>",
-                                 "<center>{txt_prob_above}: {auto_round(prob_above)}</center>"),
-            label = ~ dplyr::case_when(
-              category == 'below' ~ glue::glue("{txt_prob_below}: {auto_round(prob_below)}"),
-              category == 'normal' ~ glue::glue("{txt_prob_normal}: {auto_round(prob_normal)}"),
-              category == 'above' ~ glue::glue("{txt_prob_above}: {auto_round(prob_above)}"),
-              is.na(category) ~ switch(lang, "en" = "No data", 
-                                       "es" = "Sin datos", 
-                                       "pt" = "Não há dados"),
-              TRUE ~ switch(lang, "en" = "Unknown category!", 
-                            "es" = "Categoría desconocida!", 
-                            "pt" = "Categoria desconhecida!")))
+            popup = ~ glue::glue("<center>Lon: {longitude}, Lat: {latitude}</center> 
+                                 {popup_msg}"),
+            label = ~ label_msg)
           else . } %>%
         leaflet::addLegend(
           map = .,
@@ -483,7 +501,7 @@ PlotsHelper <- R6::R6Class(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
                      purrr::map_chr(
-                       .x = if (!is.null(dry_mask_df)) c("NaN", "DryM.") else "NaN", 
+                       .x = if (!is.null(dry_mask_df)) c("NaN", switch(lang, "en" ="D.M.", "es" = "M.S.", "pt" = "M.S.")) else "NaN", 
                        .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
           className = "info legend principal",
