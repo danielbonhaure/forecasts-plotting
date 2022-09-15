@@ -497,15 +497,15 @@ PlotsHelper <- R6::R6Class(
                      purrr::map_chr(
                        .x = if (!is.null(dry_mask_df)) c(na_color_prob, mask_color) else na_color_prob, 
                        .f = ~ glue::glue('{.x};border-radius: 25px;margin-top:3px;'))),
-          labels = c("<b style='margin-left:-20px'> {txt_leg_lbl_below} </b>", "",
+          labels = c(glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_below} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-                     "<b style='margin-left:-20px'> {txt_leg_lbl_normal} </b>", "",
+                     glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_normal} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-                     "<b style='margin-left:-20px'> {txt_leg_lbl_above} </b>", "",
+                     glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_above} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
