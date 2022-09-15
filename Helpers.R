@@ -358,6 +358,15 @@ PlotsHelper <- R6::R6Class(
       masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
                            "es" = "Enmascarada, Máscara Seca", 
                            "pt" = "Mascarada, Máscara Seca")
+      txt_leg_lbl_below = switch(lang, "en" = "Prob. Below Normal", 
+                                 "es" = "Prob. Inferior a lo Normal",
+                                 "pt" = "Prob. Debaixo do normal")
+      txt_leg_lbl_normal = switch(lang, "en" = "Prob. Normal", 
+                                  "es" = "Prob. Normal",
+                                  "pt" = "Prob. Normal")
+      txt_leg_lbl_above = switch(lang, "en" = "Prob. Above Normal", 
+                                 "es" = "Prob. Superior a lo Normal",
+                                 "pt" = "Prob. Acima do Normal")
         
       # Determinar el color de cada celda
       data_df <- data_df %>%
@@ -378,8 +387,8 @@ PlotsHelper <- R6::R6Class(
             TRUE ~ NA_character_),
           label_msg = dplyr::case_when(
             category == 'below' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
-            category == 'normal' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
-            category == 'above' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
+            category == 'normal' ~ paste0(txt_prob_normal, ": ", as.character(auto_round(prob_normal))),
+            category == 'above' ~ paste0(txt_prob_above, ": ", as.character(auto_round(prob_above))),
             is.na(category) & (!is.na(prob_below) | !is.na(prob_normal) | !is.na(prob_above)) ~ no_cat_txt,
             is.na(category) & is.na(prob_below) & is.na(prob_normal) & is.na(prob_above) ~ no_data_txt,
             TRUE ~ unknown_cat_txt),
@@ -488,15 +497,15 @@ PlotsHelper <- R6::R6Class(
                      purrr::map_chr(
                        .x = if (!is.null(dry_mask_df)) c(na_color_prob, mask_color) else na_color_prob, 
                        .f = ~ glue::glue('{.x};border-radius: 25px;margin-top:3px;'))),
-          labels = c("<b style='margin-left:-20px'> Below Normal </b>", "",
+          labels = c("<b style='margin-left:-20px'> {txt_leg_lbl_below} </b>", "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-                     "<b style='margin-left:-20px'> Near Normal </b>", "",
+                     "<b style='margin-left:-20px'> {txt_leg_lbl_normal} </b>", "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
-                     "<b style='margin-left:-20px'> Above Normal </b>", "",
+                     "<b style='margin-left:-20px'> {txt_leg_lbl_above} </b>", "",
                      purrr::map_chr(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
