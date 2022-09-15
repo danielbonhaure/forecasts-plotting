@@ -138,14 +138,16 @@ if ( length(cpt_base_files) == 0 ) {
       obs_file = paste0(
         stringr::str_extract(basename, cpt_regex_variables), '_', 
         stringr::str_extract(basename, cpt_regex_fuente_datos), '_',
-        stringr::str_extract(basename, cpt_regex_months), '.nc')
+        stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
+          stringr::str_replace_all('_', ''), '.nc')
     ) %>% 
     dplyr::mutate(
       uncalibrated_fcst_file = paste0(
         stringr::str_extract(basename, cpt_regex_modelos), '_',
         stringr::str_extract(basename, cpt_regex_pre_variables), '_',
         stringr::str_extract(basename, cpt_regex_init_month), '_',
-        stringr::str_extract(basename, cpt_regex_months), '_',
+        stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
+          stringr::str_replace_all('_', ''), '_',
         stringr::str_extract(basename, cpt_regex_hcst_years), '_',
         stringr::str_extract(basename, cpt_regex_fcst_years), '_1.nc')
     ) %>% 
@@ -157,10 +159,11 @@ if ( length(cpt_base_files) == 0 ) {
         stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
         unlist() %>% dplyr::last() %>% as.numeric(),
       target_months = ifelse(
-        basename %>% stringr::str_extract(paste0('_', cpt_regex_months, '_')) %>%  
+        stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
           stringr::str_replace_all('_', '') %>% stringr::str_detect('-'),
         yes = paste(crange(global_ic$month+1, global_ic$month+3, 12), collapse='-'),
-        no = stringr::str_extract(basename, cpt_regex_months)) %>% as.character()
+        no = stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
+          stringr::str_replace_all('_', '')) %>% as.character()
     ) %>% dplyr::ungroup() %>%
     dplyr::mutate(
       obs_data_source = stringr::str_extract(basename, cpt_regex_fuente_datos)
