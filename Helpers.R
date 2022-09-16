@@ -169,6 +169,20 @@ PlotsHelper <- R6::R6Class(
                              breaks = NULL, colors = NULL, 
                              save_map = T) {
       
+      # Definir texto a ser utilizados
+      no_data_txt <- switch(lang, "en" = "No data", 
+                            "es" = "Sin datos", 
+                            "pt" = "Sem dados")
+      no_data_txt_short <- switch(lang, "en" = "No data", 
+                                  "es" = "Sin datos", 
+                                  "pt" = "Sem dados")
+      masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
+                           "es" = "Enmascarada, Máscara Seca", 
+                           "pt" = "Mascarada, Máscara Seca")
+      masked_txt_short <- switch(lang, "en" = "Dry Mask", 
+                                 "es" = "Máscara Seca", 
+                                 "pt" = "Máscara Seca")
+      
       # Establecer breaks y color por defecto (siempre debe haber un color más que breaks)
       if ( is.null(breaks) && is.null(colors) ) {
         colors <- viridis::viridis(10)
@@ -189,9 +203,7 @@ PlotsHelper <- R6::R6Class(
           c_color = purrr::map_chr(
             value, ~ get_value_color(.x, breaks, colors, na_color)),
           label_msg = dplyr::case_when(
-            is.na(value) ~ switch(lang, "en" = "No data", 
-                                  "es" = "Sin datos", 
-                                  "pt" = "Sem dados"),
+            is.na(value) ~ no_data_txt,
             TRUE ~ as.character(auto_round(value)) ) )
       
       # Enmascarar con máscara seca si corresponde
@@ -202,9 +214,7 @@ PlotsHelper <- R6::R6Class(
           dplyr::mutate(
             c_color = ifelse(must_be_masked, mask_color, c_color),
             label_msg = dplyr::case_when(
-              must_be_masked ~ switch(lang, "en" = "Masked, Dry Mask", 
-                                    "es" = "Enmascarado, Máscara Seca", 
-                                    "pt" = "Mascarado, Máscara Seca"),
+              must_be_masked ~ masked_txt,
               TRUE ~ as.character(auto_round(value)) ) ) %>%
           dplyr::select(-must_be_masked)
       }
@@ -219,7 +229,7 @@ PlotsHelper <- R6::R6Class(
       
       # Generar el gráfico
       css_fix_1 <- 
-        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important;}"
+        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
       css_fix_2 <- 
         ".leaflet-top .leaflet-control {margin-top: 20px;}"
       css_title <- 
@@ -295,8 +305,8 @@ PlotsHelper <- R6::R6Class(
               .x = breaks, 
               .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
             purrr::map_chr(
-              .x = if (!is.null(dry_mask_df)) c("NaN", switch(lang, "en" ="D.M.", "es" = "M.S.", "pt" = "M.S.")) else "NaN", 
-              .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
+              .x = if (!is.null(dry_mask_df)) c(no_data_txt_short, masked_txt_short) else no_data_txt_short, 
+              .f = ~ paste0("<i style='opacity: .9; white-space: nowrap; width: fit-content;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
           className = "info legend principal",
           opacity = 0.9) %>%
@@ -355,9 +365,15 @@ PlotsHelper <- R6::R6Class(
       no_data_txt <- switch(lang, "en" = "No data", 
                             "es" = "Sin datos", 
                             "pt" = "Sem dados")
+      no_data_txt_short <- switch(lang, "en" = "No data", 
+                                  "es" = "Sin datos", 
+                                  "pt" = "Sem dados")
       masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
                            "es" = "Enmascarada, Máscara Seca", 
                            "pt" = "Mascarada, Máscara Seca")
+      masked_txt_short <- switch(lang, "en" = "Dry Mask", 
+                                 "es" = "Máscara Seca", 
+                                 "pt" = "Máscara Seca")
       txt_leg_lbl_below = switch(lang, "en" = "Prob. Below Normal", 
                                  "es" = "Prob. Inferior a lo Normal",
                                  "pt" = "Prob. Debaixo do normal")
@@ -425,7 +441,7 @@ PlotsHelper <- R6::R6Class(
       
       # Generar el gráfico
       css_fix_1 <- 
-        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important;}"
+        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
       css_fix_2 <- 
         ".leaflet-top .leaflet-control {margin-top: 20px;}"
       css_title <- 
@@ -510,16 +526,18 @@ PlotsHelper <- R6::R6Class(
                        .x = breaks, 
                        .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
                      purrr::map_chr(
-                       .x = if (!is.null(dry_mask_df)) c("NaN", switch(lang, "en" ="D.M.", "es" = "M.S.", "pt" = "M.S.")) else "NaN", 
-                       .f = ~ paste0("<i style='opacity: .9;'>", .x, "</i>"))),
+                       .x = if (!is.null(dry_mask_df)) c(no_data_txt_short, masked_txt_short) else no_data_txt_short, 
+                       .f = ~ paste0("<i style='opacity: .9; white-space: nowrap; width: fit-content;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
           className = "info legend principal",
           opacity = 0.9) %>%
-        leaflet::addControl(
-          html = htmltools::tags$div(
-            htmltools::HTML(stringr::str_replace_all(main_title, '\n', '<br>'))),
-          position = "topright",
-          className="map-title info") %>%
+        { if ( !is.na(main_title) && !is.null(main_title) && main_title != "" ) 
+          leaflet::addControl(.,
+            html = htmltools::tags$div(
+              htmltools::HTML(stringr::str_replace_all(main_title, '\n', '<br>'))),
+            position = "topright",
+            className="map-title info")
+          else . } %>%
         leaflet::addControl(
           html = GenerarHTMLLogo(
             global_images$`crc-sas`), 
@@ -634,7 +652,7 @@ PlotsHelper <- R6::R6Class(
                                  "\n{issued}: {initial_month} {initial_year} ",
                                  "\n({calibrated})")
       } else if (data_type == "prob.fcst") {
-        main_title <- glue::glue("{variable_str} ({variable_unit})",
+        main_title <- glue::glue("{variable_str}",
                                  "\n{toupper(modelo)} {valid_for} {month_year} ",
                                  "\n{issued}: {initial_month} {initial_year} ",
                                  "\n({calibrated})")
