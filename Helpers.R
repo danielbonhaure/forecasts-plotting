@@ -656,9 +656,9 @@ PlotsHelper <- R6::R6Class(
                              switch(lang, "en" = "Precipitation", 
                                     "es" = "Precipitación", 
                                     "pt" = "Precipitação"), 
-                             switch(lang, "en" = "Average Air Temperature - 2m", 
-                                    "es" = "Temperatura Media del Aire - 2m",
-                                    "pt" = "Temperatura Média do Ar - 2m"))
+                             switch(lang, "en" = "Temperature", 
+                                    "es" = "Temperatura",
+                                    "pt" = "Temperatura"))
       variable_unit <- ifelse(variable == 'prcp', 'mm', '°C')
       
       modelo <- stringr::str_extract(base_file$basename, cpt_regex_modelos)
@@ -693,50 +693,50 @@ PlotsHelper <- R6::R6Class(
                            "pt" = "Título indefinido")
       
       # Definir elementos según idioma
-      valid_for <- switch(lang, "en" = "valid for", 
-                          "es" = "válido para",
-                          "pt" = "valido para")
+      valid_for <- switch(lang, "en" = "Valid for", 
+                          "es" = "Válido para",
+                          "pt" = "Valido para")
       issued <- switch(lang, "en" = "Issued", 
                        "es" = "Emitido",
                        "pt" = "Emitido")
-      calibrated <- switch(lang, "en" = "calibrated forecast", 
-                           "es" = "pronóstico calibrado",
-                           "pt" = "previsão calibrada")
-      uncalibrated <- switch(lang, "en" = "uncalibrated forecast", 
-                             "es" = "pronóstico no calibrado",
-                             "pt" = "previsão não calibrada")
+      calibrated <- switch(lang, "en" = "Calibrated model:", 
+                           "es" = "Modelo calibrado:",
+                           "pt" = "Modelo calibrado:")
+      uncalibrated <- switch(lang, "en" = "Uncalibrated model", 
+                             "es" = "Modelo sin calibrar",
+                             "pt" = "Modelo sem calibrar")
       
       # Definir título real
       if (data_type == "anom") {
-        anomaly_desc <- switch(lang, "en" = "Anomaly Forecast", 
-                               "es" = "Pronóstico de Anomalías",
-                               "pt" = "Previsão de Anomalia")
-        main_title <- glue::glue("{variable_str} {anomaly_desc} ({variable_unit})",
-                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
-                                 "\n{issued}: {initial_month} {initial_year}")
+        anomaly_desc <- switch(lang, "en" = "Anomaly forecast for", 
+                               "es" = "Pronóstico de Anomalías para",
+                               "pt" = "Previsão de Anomalia para")
+        main_title <- glue::glue("{anomaly_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
+                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "corr") {
         correlation_desc <- switch(lang, "en" = "Correlation between Forecast and Observation", 
                                    "es" = "Correlación entre Pronóstico y Observación",
                                    "pt" = "Correlação entre Previsão e Observação")
-        main_title <- glue::glue("{correlation_desc} ",
-                                 "({base_file$hcst_first_year}-{base_file$hcst_last_year})",
-                                 "\n{toupper(modelo)} {valid_for} {forecast_months_str} ",
-                                 "\n{issued}: {initial_month}")
+        main_title <- glue::glue("{correlation_desc} ({base_file$hcst_first_year}-{base_file$hcst_last_year})",
+                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month}; {valid_for} {forecast_months_str}")
       } else if (data_type == "det.fcst") {
-        main_title <- glue::glue("{variable_str} ({variable_unit})",
-                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
-                                 "\n{issued}: {initial_month} {initial_year} ",
-                                 "\n({calibrated})")
+        det_fcst_desc <- switch(lang, "en" = "Deterministic forecast for", 
+                                "es" = "Pronóstico determinístico para",
+                                "pt" = "Previsão determinística para")
+        main_title <- glue::glue("{det_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
+                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "prob.fcst") {
-        main_title <- glue::glue("{variable_str}",
-                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
-                                 "\n{issued}: {initial_month} {initial_year} ",
-                                 "\n({calibrated})")
+        prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
+                                 "es" = "Pronóstico probabilístico para",
+                                 "pt" = "Previsão probabilística para")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}, {tolower(valid_for)} {month_year}",
+                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "uncal.fcst") {
-        main_title <- glue::glue("{variable_str} ({variable_unit})",
-                                 "\n{toupper(modelo)} {valid_for} {month_year} ",
-                                 "\n{issued}: {initial_month} {initial_year} ",
-                                 "\n({uncalibrated})")
+        uncal_fcst_desc <- switch(lang, "en" = "Original Forecast for", 
+                                  "es" = "Pronóstico original para",
+                                  "pt" = "Previsão original para")
+        main_title <- glue::glue("{uncal_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
+                                 "\n{uncalibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
       } 
       
       # Retornar título real
