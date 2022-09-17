@@ -16,10 +16,10 @@ shapefiles:
   crcsas: "/data/shapefiles/CRC_SAS.shp"
   
 images: 
-  crcsas: "/data/images/logo-crcsas.png"
-  smn: "/data/images/logo-smn.png"
-  cima: "/data/images/logo-cima.png"
-  climax: "/data/images/logo-climax.png"
+  crcsas: "./logos/logo-crcsas.png"
+  smn: "./logos/logo-smn.png"
+  cima: "./logos/logo-cima.png"
+  climax: "./logos/logo-climax.png"
   
 output_langs: ["en", "es", "pt"]
 output_plots: ["prob.fcst"]  # ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst"]
