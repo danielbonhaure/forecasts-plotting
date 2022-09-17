@@ -340,7 +340,7 @@ PlotsHelper <- R6::R6Class(
       # Definir texto a ser utilizados
       txt_prob_below = switch(lang, "en" = "Prob. Below", 
                               "es" = "Prob. Inferior",
-                              "pt" = "Prob. Debaixo")
+                              "pt" = "Prob. Abaixo")
       txt_prob_normal = switch(lang, "en" = "Prob. Normal", 
                                "es" = "Prob. Normal",
                                "pt" = "Prob. Normal")
@@ -367,7 +367,7 @@ PlotsHelper <- R6::R6Class(
                                  "pt" = "Máscara Seca")
       txt_leg_lbl_below = switch(lang, "en" = "Prob. Below Normal", 
                                  "es" = "Prob. Inferior a lo Normal",
-                                 "pt" = "Prob. Debaixo do normal")
+                                 "pt" = "Prob. Abaixo do normal")
       txt_leg_lbl_normal = switch(lang, "en" = "Prob. Normal", 
                                   "es" = "Prob. Normal",
                                   "pt" = "Prob. Normal")
