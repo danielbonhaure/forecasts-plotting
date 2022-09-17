@@ -13,11 +13,14 @@ unify_grid_resolution: 1
 #   year: 2022
 
 shapefiles:
-  crc-sas: "/data/shapefiles/CRC_SAS.shp"
+  crcsas: "/data/shapefiles/CRC_SAS.shp"
   
 images: 
-  crc-sas: "/data/images/logo-crcsas.png"
-
+  crcsas: "/data/images/logo-crcsas.png"
+  smn: "/data/images/logo-smn.png"
+  cima: "/data/images/logo-cima.png"
+  climax: "/data/images/logo-climax.png"
+  
 output_langs: ["en", "es", "pt"]
 output_plots: ["prob.fcst"]  # ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst"]
 output_leadtimes: [1]  # [1, 2, 3, 4, 5, 6, 7]

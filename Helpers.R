@@ -40,7 +40,7 @@ global_shapefiles <- global_config$get_config('shapefiles')
 global_images <- global_config$get_config('images')
 
 # Leer shapes a ser utlizados en los gráficos
-crcsas_sf <- sf::st_read(global_shapefiles$`crc-sas`, quiet = TRUE)
+crcsas_sf <- sf::st_read(global_shapefiles$crcsas, quiet = TRUE)
 
 # Se crea un polígono con buffer para el CRC-SAS.
 # Se crea aquí porque es una operación lenta.
@@ -148,14 +148,14 @@ get_value_color <- function(valor, breaks, colors, na_value_color) {
 }
 
 
-GenerarHTMLLogo <- function(logo.file) {
+GenerarHTMLLogo <- function(logo.file, alt.text) {
   logo.ascii <- base::readBin(con = logo.file,
                               what = "raw",
                               n = base::file.info(logo.file)[1, "size"])
   logo.b64   <- RCurl::base64Encode(txt = logo.ascii,
                                     mode = "character")
   html       <- paste0("<img src='data:image/png;base64,", logo.b64,
-                       "' border=\"0\" alt=\"CRC-SAS\"/>")
+                       "' border=\"0\" alt=\"", alt.text, "\"/>")
   return (html)
 }
 
@@ -164,10 +164,10 @@ PlotsHelper <- R6::R6Class(
   classname = "PlotsHelper",
   public = list(
     graficar_mapa = function(data_df, gridded_data, spatial_domain, 
-                             main_title, legend_title, lang,
+                             main_title, legend_title, data_type, lang,
                              output_file_abspath, dry_mask_df,
                              breaks = NULL, colors = NULL, 
-                             save_map = T) {
+                             save_map = TRUE) {
       
       # Definir texto a ser utilizados
       no_data_txt <- switch(lang, "en" = "No data", 
@@ -227,24 +227,6 @@ PlotsHelper <- R6::R6Class(
         circle_radius <- ifelse(min_distance < 2, 3, 5)
       }
       
-      # Generar el gráfico
-      # Para usar insertado el svg descargado de fontawesome, use esta web: https://yoksel.github.io/url-encoder/
-      css_fix_1 <- 
-        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
-      css_fix_2 <- 
-        ".leaflet-top .leaflet-control {margin-top: 20px;}"
-      css_title <- 
-        ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px;}"
-      css_hide_button <-
-        "#hide-leyend-button {position: absolute; bottom: 0px; right: 50px; z-index: 400; background-repeat: no-repeat;}"
-      css_fa_eye <-
-        ".fa-eye {margin-right: 1px; width: 17px; height: 17px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath d='M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z'/%3E%3C/svg%3E\");}"
-      css_fa_eye_slash <-
-        ".fa-eye-slash {margin-bottom: -2px; width: 19px; height: 19px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'%3E%3Cpath d='M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z'/%3E%3C/svg%3E\");}"
-      # Convert CSS to HTML
-      html_fix <- htmltools::tags$style(
-        type = "text/css", paste(css_fix_1, css_fix_2, css_title,
-                                 css_hide_button, css_fa_eye, css_fa_eye_slash))
       # Crear mapa con leaflet
       m <- leaflet::leaflet() %>%
         leaflet::fitBounds(
@@ -323,10 +305,8 @@ PlotsHelper <- R6::R6Class(
             htmltools::HTML(stringr::str_replace_all(main_title, '\n', '<br>'))),
           position = "topright",
           className="map-title info") %>%
-        leaflet::addControl(
-          html = GenerarHTMLLogo(
-            global_images$`crc-sas`), 
-          position = "bottomleft") %>%
+        PlotsHelper$agregar_logos(
+          mapa_leaflet = ., data_type = data_type) %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(
             title = switch(lang, "en" = "Download map as PNG", 
@@ -337,37 +317,10 @@ PlotsHelper <- R6::R6Class(
             hideControlContainer = FALSE,
             filename = basename(output_file_abspath) %>% 
               tools::file_path_sans_ext() %>% paste0('.png'))) %>%
-        htmlwidgets::prependContent(html_fix) %>%
-        htmlwidgets::onRender("
-          function() { 
-            var map = this;
-            
-            // create the button object 
-            var button = document.createElement('i');
-            
-            // set button properties
-            button.id = 'hide-leyend-button';
-            button.style.visibility = 'visible';
-            button.classList.add('fa-eye-slash');
-            
-            // add onclik function to button
-            button.onclick = function () {
-              for (let x of document.getElementsByClassName('info legend principal')) {
-                if (x.style.visibility == 'visible') {
-                  this.classList.remove('fa-eye-slash');
-                  this.classList.add('fa-eye');
-                  x.style.visibility = 'hidden';
-                } else {
-                  this.classList.remove('fa-eye');
-                  this.classList.add('fa-eye-slash');
-                  x.style.visibility = 'visible';
-                }
-              }
-            }
-            
-            // add the button to the body
-            document.body.appendChild(button);
-         }")
+        htmlwidgets::prependContent(
+          PlotsHelper$definir_estilos_css()) %>%
+        htmlwidgets::onRender(
+          PlotsHelper$definir_javascript())
       # Guardar mapa
       if ( save_map )
         htmlwidgets::saveWidget(
@@ -378,11 +331,11 @@ PlotsHelper <- R6::R6Class(
       return ( m )
     },
     graficar_mapa_prob = function(data_df, gridded_data, spatial_domain,
-                                  main_title, legend_title, lang, 
+                                  main_title, legend_title, data_type, lang, 
                                   output_file_abspath, dry_mask_df,
                                   breaks = NULL, colors_below = NULL, 
                                   colors_normal = NULL, colors_above = NULL,
-                                  save_map = T) {
+                                  save_map = TRUE) {
       
       # Definir texto a ser utilizados
       txt_prob_below = switch(lang, "en" = "Prob. Below", 
@@ -477,24 +430,6 @@ PlotsHelper <- R6::R6Class(
         circle_radius <- min(c(dist_between_lon, dist_between_lat))
       }
       
-      # Generar el gráfico
-      # Para usar insertado el svg descargado de fontawesome, use esta web: https://yoksel.github.io/url-encoder/
-      css_fix_1 <- 
-        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
-      css_fix_2 <- 
-        ".leaflet-top .leaflet-control {margin-top: 20px;}"
-      css_title <- 
-        ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px;}"
-      css_hide_button <-
-        "#hide-leyend-button {position: absolute; bottom: 0px; right: 50px; z-index: 400; background-repeat: no-repeat;}"
-      css_fa_eye <-
-        ".fa-eye {margin-right: 1px; width: 17px; height: 17px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath d='M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z'/%3E%3C/svg%3E\");}"
-      css_fa_eye_slash <-
-        ".fa-eye-slash {margin-bottom: -2px; width: 19px; height: 19px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'%3E%3Cpath d='M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z'/%3E%3C/svg%3E\");}"
-      # Convert CSS to HTML
-      html_fix <- htmltools::tags$style(
-        type = "text/css", paste(css_fix_1, css_fix_2, css_title, 
-                                 css_hide_button, css_fa_eye, css_fa_eye_slash))
       # Crear mapa con leaflet
       m <- leaflet::leaflet() %>%
         leaflet::fitBounds(
@@ -584,10 +519,8 @@ PlotsHelper <- R6::R6Class(
             position = "topright",
             className="map-title info")
           else . } %>%
-        leaflet::addControl(
-          html = GenerarHTMLLogo(
-            global_images$`crc-sas`), 
-          position = "bottomleft") %>%
+        PlotsHelper$agregar_logos(
+          mapa_leaflet = ., data_type = data_type) %>%
         leaflet.extras2::addEasyprint(
           options = leaflet.extras2::easyprintOptions(
             title = switch(lang, "en" = "Download map as PNG", 
@@ -598,8 +531,83 @@ PlotsHelper <- R6::R6Class(
             hideControlContainer = FALSE,
             filename = basename(output_file_abspath) %>% 
               tools::file_path_sans_ext() %>% paste0('.png'))) %>%
-        htmlwidgets::prependContent(html_fix) %>%
-        htmlwidgets::onRender("
+        htmlwidgets::prependContent(
+          PlotsHelper$definir_estilos_css()) %>%
+        htmlwidgets::onRender(
+          PlotsHelper$definir_javascript())
+      # Guardar mapa
+      if ( save_map )
+        htmlwidgets::saveWidget(
+          widget = m, 
+          file = output_file_abspath, 
+          selfcontained = TRUE)
+      # Retornar mapa (para pruebas)
+      return ( m )
+    },
+    agregar_logos = function(mapa_leaflet, data_type) {
+      mapa_leaflet <- mapa_leaflet %>%
+        { if ( file.exists(global_images$crcsas) ) 
+          leaflet::addControl(.,
+                              html = GenerarHTMLLogo(
+                                global_images$crcsas, "CRC-SAS"), 
+                              position = "bottomleft",
+                              className = "info legend logos crcsas")
+          else . } %>%
+          { if ( data_type == 'ereg' && file.exists(global_images$smn) ) 
+            leaflet::addControl(.,
+                                html = GenerarHTMLLogo(
+                                  global_images$smn, "SMN"), 
+                                position = "bottomleft",
+                                className = "info legend logos smn")
+            else . } %>%
+          { if ( data_type == 'ereg' && file.exists(global_images$cima) ) 
+              leaflet::addControl(.,
+                                  html = GenerarHTMLLogo(
+                                    global_images$cima, "CIMA CONICET"), 
+                                  position = "bottomleft",
+                                  className = "info legend logos cima")
+            else . } %>%
+          { if ( data_type == 'ereg' && file.exists(global_images$climax) ) 
+              leaflet::addControl(.,
+                                  html = GenerarHTMLLogo(
+                                    global_images$climax, "CLIMAX"), 
+                                  position = "bottomleft",
+                                  className = "info legend logos climax")
+            else . }
+    },
+    definir_estilos_css = function() {
+      # Generar el gráfico
+      # Para usar insertado el svg descargado de fontawesome, use esta web: https://yoksel.github.io/url-encoder/
+      css_fix_1 <- 
+        ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
+      css_fix_2 <- 
+        ".leaflet-top .leaflet-control {margin-top: 20px;}"
+      css_title <- 
+        ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px;}"
+      css_logos <- 
+        ".logos {background: rgba(255, 255, 255, 0.5) !important;}"
+      css_logo_climax <- 
+        ".logos.climax img {width: 70px; height: 66px;}"
+      css_logo_cima <- 
+        ".logos.cima img {width: 70px; height: 63px;}"
+      css_logo_smn <- 
+        ".logos.smn img {width: 70px; height: 70px;}"
+      css_logo_crcsas <- 
+        ".logos.crcsas img {width: 70px; height: 78px;}"
+      css_hide_button <-
+        "#hide-leyend-button {position: absolute; bottom: 0px; right: 50px; z-index: 400; background-repeat: no-repeat;}"
+      css_fa_eye <-
+        ".fa-eye {margin-right: 1px; width: 17px; height: 17px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath d='M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z'/%3E%3C/svg%3E\");}"
+      css_fa_eye_slash <-
+        ".fa-eye-slash {margin-bottom: -2px; width: 19px; height: 19px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'%3E%3Cpath d='M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z'/%3E%3C/svg%3E\");}"
+      # Convert CSS to HTML
+      html_fix <- htmltools::tags$style(
+        type = "text/css", paste(css_fix_1, css_fix_2, css_title, css_logos,
+                                 css_logo_climax, css_logo_cima, css_logo_smn, css_logo_crcsas,
+                                 css_hide_button, css_fa_eye, css_fa_eye_slash))
+    },
+    definir_javascript = function() {
+      js <- "
           function() { 
             var map = this;
             
@@ -628,15 +636,7 @@ PlotsHelper <- R6::R6Class(
             
             // add the button to the body
             document.body.appendChild(button);
-         }")
-      # Guardar mapa
-      if ( save_map )
-        htmlwidgets::saveWidget(
-          widget = m, 
-          file = output_file_abspath, 
-          selfcontained = TRUE)
-      # Retornar mapa (para pruebas)
-      return ( m )
+         }"
     },
     definir_titulo = function(data_type, base_file, lang, data_year = NULL) {
       
@@ -794,6 +794,15 @@ PlotsHelper$graficar_mapa = function(...) {
 }
 PlotsHelper$graficar_mapa_prob = function(...) {
   PlotsHelper$public_methods$graficar_mapa_prob(...)
+}
+PlotsHelper$agregar_logos = function(...) {
+  PlotsHelper$public_methods$agregar_logos(...)
+}
+PlotsHelper$definir_estilos_css = function(...) {
+  PlotsHelper$public_methods$definir_estilos_css(...)
+}
+PlotsHelper$definir_javascript = function(...) {
+  PlotsHelper$public_methods$definir_javascript(...)
 }
 PlotsHelper$definir_titulo = function(...) {
   PlotsHelper$public_methods$definir_titulo(...)

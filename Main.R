@@ -424,7 +424,7 @@ for ( i in indices ) {
       gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
       main_title = PlotsHelper$definir_titulo("corr", base_file, lang), 
       legend_title = PlotsHelper$definir_titulo_leyenda("corr", base_file, lang), 
-      lang = lang,
+      data_type = base_file$type, lang = lang, 
       spatial_domain = list(
         nla = max(corr_df$latitude),
         sla = min(corr_df$latitude),
@@ -523,7 +523,7 @@ for ( i in indices ) {
         gridded_data = det_gridded_data,
         main_title = PlotsHelper$definir_titulo("anom", base_file, lang, data_year), 
         legend_title = PlotsHelper$definir_titulo_leyenda("anom", base_file, lang), 
-        lang = lang,
+        data_type = base_file$type, lang = lang,
         spatial_domain = list(
           nla = max(anom_df$latitude),
           sla = min(anom_df$latitude),
@@ -602,7 +602,7 @@ for ( i in indices ) {
         gridded_data = det_gridded_data,
         main_title = PlotsHelper$definir_titulo("det.fcst", base_file, lang, data_year), 
         legend_title = PlotsHelper$definir_titulo_leyenda("det.fcst", base_file, lang), 
-        lang = lang,
+        data_type = base_file$type, lang = lang,
         spatial_domain = list(
           nla = max(det_fcst_df$latitude),
           sla = min(det_fcst_df$latitude),
@@ -690,7 +690,7 @@ for ( i in indices ) {
         gridded_data = prob_gridded_data,
         main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
         legend_title = PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
-        lang = lang,
+        data_type = base_file$type, lang = lang,
         spatial_domain = list(
           nla = max(prob_fcst_df$latitude),
           sla = min(prob_fcst_df$latitude),
@@ -757,7 +757,7 @@ for ( i in indices ) {
           gridded_data = uncal_gridded_data,
           main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, lang, data_year), 
           legend_title = PlotsHelper$definir_titulo_leyenda("uncal.fcst", base_file, lang), 
-          lang = lang,
+          data_type = base_file$type, lang = lang,
           spatial_domain = list(
             nla = max(uncal_fcst_df$latitude),
             sla = min(uncal_fcst_df$latitude),
