@@ -108,7 +108,6 @@ COPY . /opt/plotter
 
 # Create input and output folders (these folders are too big so they must be used them as volumes)
 RUN mkdir -p /data/shapefiles
-RUN mkdir -p /data/images
 RUN mkdir -p /data/acc-cpt/input/predictands
 RUN mkdir -p /data/acc-cpt/input/predictors
 RUN mkdir -p /data/acc-cpt/output
@@ -207,7 +206,6 @@ USER $NON_ROOT_USR
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#        --volume <path-to-file>:/data/images/logo-crcsas.png \
 #        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
 #        --detach plotter:latest
 
@@ -224,7 +222,6 @@ USER $NON_ROOT_USR
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#        --volume <path-to-file>:/data/images/logo-crcsas.png \
 #        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
 #        --volume <path-to-file>:/opt/plotter/config.yaml \
 #        --rm plotter:latest /usr/bin/Rscript /opt/plotter/Main.R
