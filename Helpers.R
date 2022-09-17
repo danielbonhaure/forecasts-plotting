@@ -612,23 +612,43 @@ PlotsHelper <- R6::R6Class(
             var map = this;
             
             // create the button object 
-            var button = document.createElement('i');
+            var button = document.createElement('div');
             
             // set button properties
             button.id = 'hide-leyend-button';
             button.style.visibility = 'visible';
             button.classList.add('fa-eye-slash');
             
+            // mark elements as visible
+            for (let x of document.getElementsByClassName('info legend principal')) {
+              x.style.visibility = 'visible';
+            }
+            for (let x of document.getElementsByClassName('map-title info leaflet-control')) {
+              x.style.visibility = 'visible';
+            }
+            
             // add onclik function to button
             button.onclick = function () {
+              // change eye button
+              if (this.classList.contains('fa-eye-slash')) {
+                this.classList.remove('fa-eye-slash');
+                this.classList.add('fa-eye');
+              } else {
+                this.classList.remove('fa-eye');
+                this.classList.add('fa-eye-slash');
+              }
+              // hidde or show legend and title
               for (let x of document.getElementsByClassName('info legend principal')) {
                 if (x.style.visibility == 'visible') {
-                  this.classList.remove('fa-eye-slash');
-                  this.classList.add('fa-eye');
                   x.style.visibility = 'hidden';
                 } else {
-                  this.classList.remove('fa-eye');
-                  this.classList.add('fa-eye-slash');
+                  x.style.visibility = 'visible';
+                }
+              }
+              for (let x of document.getElementsByClassName('map-title info leaflet-control')) {
+                if (x.style.visibility == 'visible') {
+                  x.style.visibility = 'hidden';
+                } else {
                   x.style.visibility = 'visible';
                 }
               }
