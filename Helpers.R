@@ -393,15 +393,15 @@ PlotsHelper <- R6::R6Class(
               .f = ~ get_value_color(.x, breaks[seq(2, length(breaks)-1)], colors_normal, na_color_prob)),
             TRUE ~ NA_character_),
           label_msg = dplyr::case_when(
-            category == 'below' ~ paste0(txt_prob_below, ": ", as.character(auto_round(prob_below))),
-            category == 'normal' ~ paste0(txt_prob_normal, ": ", as.character(auto_round(prob_normal))),
-            category == 'above' ~ paste0(txt_prob_above, ": ", as.character(auto_round(prob_above))),
+            category == 'below' ~ paste0(txt_prob_below, ": ", as.character(unlist(auto_round(prob_below))*100), " %"),
+            category == 'normal' ~ paste0(txt_prob_normal, ": ", as.character(unlist(auto_round(prob_normal))*100), " %"),
+            category == 'above' ~ paste0(txt_prob_above, ": ", as.character(unlist(auto_round(prob_above))*100), " %"),
             is.na(category) & (!is.na(prob_below) | !is.na(prob_normal) | !is.na(prob_above)) ~ no_cat_txt,
             is.na(category) & is.na(prob_below) & is.na(prob_normal) & is.na(prob_above) ~ no_data_txt,
             TRUE ~ unknown_cat_txt),
-          popup_msg = glue::glue("{txt_prob_below}: {ifelse(is.na(prob_below), no_data_txt, as.character(auto_round(prob_below)))} <br>",
-                                 "{txt_prob_normal}: {ifelse(is.na(prob_normal), no_data_txt, as.character(auto_round(prob_normal)))} <br>",
-                                 "{txt_prob_above}: {ifelse(is.na(prob_above), no_data_txt, as.character(auto_round(prob_above)))} <br>") )
+          popup_msg = paste0(txt_prob_below, ": ",  ifelse(is.na(prob_below), no_data_txt, as.character(unlist(auto_round(prob_below))*100)), " % <br>",
+                             txt_prob_normal, ": ", ifelse(is.na(prob_normal), no_data_txt, as.character(unlist(auto_round(prob_normal))*100)), " % <br>",
+                             txt_prob_above, ": ",  ifelse(is.na(prob_above), no_data_txt, as.character(unlist(auto_round(prob_above))*100)), " % <br>") )
       
       # Enmascarar con máscara seca si corresponde
       if ( !is.null(dry_mask_df) ) {
@@ -497,15 +497,15 @@ PlotsHelper <- R6::R6Class(
           labels = c(glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_below} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
                      glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_normal} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
                      glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_above} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x, "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
                      purrr::map_chr(
                        .x = if (!is.null(dry_mask_df)) c(no_data_txt_short, masked_txt_short) else no_data_txt_short, 
                        .f = ~ paste0("<i style='opacity: .9; white-space: nowrap; width: fit-content;'>", .x, "</i>"))),
