@@ -681,9 +681,18 @@ PlotsHelper <- R6::R6Class(
                                     "pt" = "Temperatura"))
       variable_unit <- ifelse(variable == 'prcp', 'mm', '°C')
       
+      # Identificar modelo en pronósticos CRC-SAS-CPT
       modelo <- stringr::str_extract(base_file$basename, cpt_regex_modelos)
+      # Si no se obtiene nada, el prono debe ser un prono Climax
       if ( is.na(modelo) )
         modelo <- stringr::str_extract(base_file$basename, ereg_regex_modelos)
+      # Los nombres de los modelos siempre va en mayúsculas
+      modelo <- toupper(modelo)
+      # El modelo MME de los pronos Climax, debe ser renombrado
+      if ( toupper(modelo) == "MME" )
+        modelo <- switch(lang, "en" = "NMME individual models", 
+                         "es" = "modelos individuales NMME", 
+                         "pt" = "modelos individuais NMME")
       
       initial_month <- meses_abb[global_ic$month]
       initial_year <- global_ic$year
@@ -732,31 +741,31 @@ PlotsHelper <- R6::R6Class(
                                "es" = "Pronóstico de Anomalías para",
                                "pt" = "Previsão de Anomalia para")
         main_title <- glue::glue("{anomaly_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "corr") {
         correlation_desc <- switch(lang, "en" = "Correlation between Forecast and Observation", 
                                    "es" = "Correlación entre Pronóstico y Observación",
                                    "pt" = "Correlação entre Previsão e Observação")
         main_title <- glue::glue("{correlation_desc} ({base_file$hcst_first_year}-{base_file$hcst_last_year})",
-                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month}; {valid_for} {forecast_months_str}")
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month}; {valid_for} {forecast_months_str}")
       } else if (data_type == "det.fcst") {
         det_fcst_desc <- switch(lang, "en" = "Deterministic forecast for", 
                                 "es" = "Pronóstico determinístico para",
                                 "pt" = "Previsão determinística para")
         main_title <- glue::glue("{det_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "prob.fcst") {
         prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
         main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}, {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
       } else if (data_type == "uncal.fcst") {
         uncal_fcst_desc <- switch(lang, "en" = "Original Forecast for", 
                                   "es" = "Pronóstico original para",
                                   "pt" = "Previsão original para")
         main_title <- glue::glue("{uncal_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{uncalibrated} {toupper(modelo)}; {issued}: {initial_month} {initial_year}")
+                                 "\n{uncalibrated} {modelo}; {issued}: {initial_month} {initial_year}")
       } 
       
       # Retornar título real
