@@ -42,8 +42,16 @@ crange <- function(start, stop, modulo) {
   } else {
     resp <- seq(start, stop)
   }
-  resp <- purrr::map_dbl(resp, ~ ifelse(.x > 12, .x %% 12, .x))
+  resp <- purrr::map_dbl(resp, ~ ifelse(.x > modulo, .x %% modulo, .x))
   return (resp)
+}
+
+# Sumar valores de manera circular
+csum <- function(x, y, modulo) {
+  resp <- x + y
+  if ( resp > modulo )
+    resp <- resp %% modulo
+  return(resp)
 }
 
 
@@ -63,23 +71,28 @@ cpt_regex_fuente_datos <- paste0('(?:', paste(config_cpt$fuentes, collapse='|'),
 
 cpt_regex_init_month <- paste0(month.abb[global_ic$month], 'ic')
 
-cpt_valid_months <- crange(global_ic$month+1, global_ic$month+3, 12)
-cpt_regex_months <- paste0('(?:', cpt_valid_months[1], '-', cpt_valid_months[3], 
-                           '|', cpt_valid_months[1], '|', cpt_valid_months[2], 
-                           '|', cpt_valid_months[3], ')')
+cpt_valid_months <- c()
+cpt_valid_trimesters <- c()
+for ( lt in global_config$get_config('output_leadtimes') ) {
+  cpt_valid_months <- c(cpt_valid_months, csum(global_ic$month, lt, 12))
+  trimester <- crange(global_ic$month+lt, global_ic$month+lt+2, 12)
+  cpt_valid_trimesters <- c(cpt_valid_trimesters, 
+                            paste0(csum(global_ic$month, lt, 12), '-', trimester[3]))
+}
+cpt_regex_months <- paste0('(?:', paste(cpt_valid_months, collapse = "|"), "|", 
+                           paste(cpt_valid_trimesters, collapse = "|"), ')')
 
 cpt_regex_hcst_years <- '(?:1981-2010|1982-2011|1991-2020|1992-2021)'
 
-fcst_year <- ifelse(
-  all(global_ic$month < cpt_valid_months),
-  yes=global_ic$year,
-  no=global_ic$year+1)
-cpt_regex_fcst_years <- paste0('(?:', fcst_year, '-', fcst_year, '|', fcst_year, ')')
+cpt_valid_years <- c(global_ic$year, paste0(global_ic$year, '-', global_ic$year))
+if ( any( cpt_valid_months <= global_ic$month ) )
+  cpt_valid_years <- c(cpt_valid_years, global_ic$year+1, paste0(global_ic$year+1, '-', global_ic$year+1))
+cpt_regex_fcst_years <- paste0('(?:', paste(cpt_valid_years, collapse = '|'), ')')
 
 cpt_files_regex <- paste0(
   '^', 
   cpt_regex_modelos, '_', cpt_regex_pre_variables, '-', cpt_regex_variables, '_', 
-  cpt_regex_fuente_datos, '_', cpt_regex_init_month, '_', cpt_regex_months, '_', 
+  cpt_regex_fuente_datos, '_', cpt_regex_init_month, '_', cpt_regex_months, '_',  
   cpt_regex_hcst_years, '_', cpt_regex_fcst_years, '_1\\.txt',
   '$')
 

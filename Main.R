@@ -149,7 +149,8 @@ if ( length(cpt_base_files) == 0 ) {
         stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
           stringr::str_replace_all('_', ''), '_',
         stringr::str_extract(basename, cpt_regex_hcst_years), '_',
-        stringr::str_extract(basename, cpt_regex_fcst_years), '_1.nc')
+        stringr::str_extract(basename, paste0('_', cpt_regex_fcst_years, '_')) %>%  
+          stringr::str_replace_all('_', ''), '_1.nc')
     ) %>% 
     dplyr::rowwise() %>% dplyr::mutate(
       hcst_first_year = stringr::str_split(
@@ -234,9 +235,12 @@ if ( 'months' %in% global_config$get_config('output_trgt_type') ) {
   m_base_files <- purrr::map_dfr(
     .x = global_config$get_config('output_leadtimes'),
     .f = function(lt, c_base_files) {
+      lt_month <- global_ic$month + lt
+      if ( lt_month > 12 )
+        lt_month <- lt_month %% 12
       # Solo se grafican los meses indicados según el leadtime
       c_base_files %>% dplyr::filter(
-        target_months == global_ic$month + lt)
+        target_months == lt_month)
     }, c_base_files = all_base_files)
   # Unir archivos filtradps en un único dataframe
   base_files <- dplyr::bind_rows(list(base_files, m_base_files))
@@ -250,9 +254,12 @@ if ( 'trimesters' %in% global_config$get_config('output_trgt_type') ) {
   t_base_files <- purrr::map_dfr(
     .x = global_config$get_config('output_leadtimes'),
     .f = function(lt, c_base_files) {
+      lt_month <- global_ic$month + lt
+      if ( lt_month > 12 )
+        lt_month <- lt_month %% 12
       # Solo se grafican los trimestres indicados según el leadtime
       c_base_files %>% dplyr::filter(
-        target_months == paste(crange(global_ic$month+lt, global_ic$month+lt+2, 12), collapse='-'))
+        target_months == paste(crange(lt_month, lt_month+2, 12), collapse='-'))
     }, c_base_files = all_base_files)
   # Unir archivos filtradps en un único dataframe
   base_files <- dplyr::bind_rows(list(base_files, t_base_files))

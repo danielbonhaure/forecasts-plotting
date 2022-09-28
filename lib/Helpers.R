@@ -21,8 +21,16 @@ crange <- function(start, stop, modulo) {
   } else {
     resp <- seq(start, stop)
   }
-  resp <- purrr::map_dbl(resp, ~ ifelse(.x > 12, .x %% 12, .x))
+  resp <- purrr::map_dbl(resp, ~ ifelse(.x > modulo, .x %% modulo, .x))
   return (resp)
+}
+
+# Sumar valores de manera circular
+csum <- function(x, y, modulo) {
+  resp <- x + y
+  if ( resp > modulo )
+    resp <- resp %% modulo
+  return(resp)
 }
 
 
