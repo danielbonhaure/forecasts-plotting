@@ -84,10 +84,11 @@ cpt_regex_months <- paste0('(?:', paste(cpt_valid_months, collapse = "|"), "|",
 
 cpt_regex_hcst_years <- '(?:1981-2010|1981-2011|1982-2011|1991-2020|1991-2021|1992-2021)'
 
-cpt_valid_years <- c(global_ic$year, paste0(global_ic$year, '-', global_ic$year))
-if ( any( cpt_valid_months <= global_ic$month ) )
-  cpt_valid_years <- c(cpt_valid_years, paste0(global_ic$year, '-', global_ic$year+1), 
-                       global_ic$year+1, paste0(global_ic$year+1, '-', global_ic$year+1))
+cpt_valid_years <- c(global_ic$year,  # para meses en el mismo año
+                     paste0(global_ic$year, '-', global_ic$year),  # para trimestres en el mismo año  
+                     paste0(global_ic$year, '-', global_ic$year+1),  # para trimestres con meses en dos años
+                     global_ic$year+1,  # para meses en el siguiente año
+                     paste0(global_ic$year+1, '-', global_ic$year+1))  # para trimestres con todos los meses en el siguiente año
 cpt_regex_fcst_years <- paste0('(?:', paste(cpt_valid_years, collapse = '|'), ')')
 
 cpt_files_regex <- paste0(
