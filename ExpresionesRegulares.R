@@ -82,11 +82,12 @@ for ( lt in global_config$get_config('output_leadtimes') ) {
 cpt_regex_months <- paste0('(?:', paste(cpt_valid_months, collapse = "|"), "|", 
                            paste(cpt_valid_trimesters, collapse = "|"), ')')
 
-cpt_regex_hcst_years <- '(?:1981-2010|1982-2011|1991-2020|1992-2021)'
+cpt_regex_hcst_years <- '(?:1981-2010|1981-2011|1982-2011|1991-2020|1991-2021|1992-2021)'
 
 cpt_valid_years <- c(global_ic$year, paste0(global_ic$year, '-', global_ic$year))
 if ( any( cpt_valid_months <= global_ic$month ) )
-  cpt_valid_years <- c(cpt_valid_years, global_ic$year+1, paste0(global_ic$year+1, '-', global_ic$year+1))
+  cpt_valid_years <- c(cpt_valid_years, paste0(global_ic$year, '-', global_ic$year+1), 
+                       global_ic$year+1, paste0(global_ic$year+1, '-', global_ic$year+1))
 cpt_regex_fcst_years <- paste0('(?:', paste(cpt_valid_years, collapse = '|'), ')')
 
 cpt_files_regex <- paste0(
