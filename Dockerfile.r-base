@@ -4,7 +4,7 @@
 ########################
 
 # Create image
-FROM rocker/r-ver:4.2 AS r_builder
+FROM r-base:4.1.2 AS r_builder
 
 # set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -62,7 +62,7 @@ RUN R -e "options(warn=2); install.packages('RCurl', repos=${CRAN_MIRROR}, verbo
 ########################
 
 # Create final image
-FROM rocker/r-ver:4.2 AS r_image
+FROM r-base:4.1.2 AS r_image
 
 # set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -96,16 +96,11 @@ RUN sudo chmod u+s $(which cron)
 
 # Install R packages from r_builder
 # https://forums.docker.com/t/using-multi-stage-docker-build-for-slimming-down-images-with-r-dependency/67967
-# OBS: La imagen oficial de R, r-base, se crea usando la rama testing de debian y R se instala usando apt, lo
-# que implica que los datos a copiar sean: 1- los ejecutables /usr/bin/R y /usr/bin/Rscript, y 2- las carpetas
-# /usr/lib/R y /usr/local/lib/R/site-library. Sin embargo, cuando se usa la imagen rocker/r-ver, creada usando
-# la rama estable de debian, los datos a copiar son los siguientes: 1- los ejecutables /usr/local/bin/R y 
-# /usr/local/bin/Rscript, y 2- las carpetas /usr/local/lib/R y /usr/local/lib/R/site-library
-RUN mkdir -p /usr/local/lib/R \
+RUN mkdir -p /usr/lib/R \
              /usr/local/lib/R/site-library
-COPY --from=r_builder /usr/local/bin/R /usr/local/bin/R
-COPY --from=r_builder /usr/local/bin/Rscript /usr/local/bin/Rscript
-COPY --from=r_builder /usr/local/lib/R /usr/local/lib/R
+COPY --from=r_builder /usr/bin/R /usr/bin/R
+COPY --from=r_builder /usr/bin/Rscript /usr/bin/Rscript
+COPY --from=r_builder /usr/lib/R /usr/lib/R
 COPY --from=r_builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=r_builder /tmp /tmp
 
@@ -146,6 +141,15 @@ USER root
 # Modify root password
 RUN echo "root:$ROOT_PWD" | chpasswd
 
+# La imagen de r tiene un usuario docker con el uid 1000 y un grupo docker
+# con el gid 1000. Generalmente esos uid y gid con los de los usuarios
+# que serán dueños de los datos a ser leídos. Por lo tanto, es necesario
+# modificar el uid del usuario docker y el gid del grupo docker.
+RUN usermod -u 777 docker
+RUN find / -ignore_readdir_race -user 1000 -exec chown -h docker {} \;
+RUN groupmod -g 777 docker
+RUN find / -ignore_readdir_race -group 1000 -exec chgrp -h docker {} \;
+
 # Create a non-root user, so the container can run as non-root
 # OBS: the UID and GID must be the same as the user that own the
 # input and the output volumes, so there isn't perms problems!!
@@ -166,7 +170,7 @@ RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/plotter
 
 # Setup cron for run once a month
 ARG CRON_TIME_STR="0 12 18 * *"
-RUN (echo "${CRON_TIME_STR} /usr/local/bin/Rscript /opt/plotter/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+RUN (echo "${CRON_TIME_STR} /usr/bin/Rscript /opt/plotter/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
