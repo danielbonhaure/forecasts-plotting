@@ -126,7 +126,8 @@ if ( length(cpt_base_files) == 0 ) {
     tibble::as_tibble_col("basename") %>%
     dplyr::mutate(
       type = 'acc-cpt',
-      variable = stringr::str_extract(basename, cpt_regex_variables)
+      variable = stringr::str_extract(basename, cpt_regex_variables),
+      basename = stringr::str_replace(basename, '_forecast$', '')
     ) %>%
     dplyr:: mutate(
       det_fcst_file = paste0(basename, '_forecast.nc'),

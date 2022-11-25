@@ -95,7 +95,7 @@ cpt_files_regex <- paste0(
   '^', 
   cpt_regex_modelos, '_', cpt_regex_pre_variables, '-', cpt_regex_variables, '_', 
   cpt_regex_fuente_datos, '_', cpt_regex_init_month, '_', cpt_regex_months, '_',  
-  cpt_regex_hcst_years, '_', cpt_regex_fcst_years, '_1\\.txt',
+  cpt_regex_hcst_years, '_', cpt_regex_fcst_years, '_1_forecast\\.nc',
   '$')
 
 
@@ -121,6 +121,6 @@ ereg_regex_months <- paste0('(?:', paste(valid_trimesters, collapse='|'), ')')
 ereg_files_regex <- paste0(
   '^', 
   ereg_regex_variables, '_', ereg_regex_modelos, '_', ereg_regex_init_month, 
-  ereg_regex_init_year, '_', ereg_regex_months, '_gp_01_mean_cor_wsereg.npz',
+  ereg_regex_init_year, '_', ereg_regex_months, '_gp_01_mean_cor_wsereg\\.nc',
   '$')
 
