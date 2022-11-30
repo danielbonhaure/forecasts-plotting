@@ -224,5 +224,5 @@ USER $NON_ROOT_USR
 #        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
 #        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
 #        --volume <path-to-file>:/opt/plotter/config.yaml \
-#        --rm plotter:latest /usr/bin/Rscript /opt/plotter/Main.R
+#        --rm plotter:latest /usr/local/bin/Rscript /opt/plotter/Main.R
 
