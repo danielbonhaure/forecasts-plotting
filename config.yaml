@@ -9,8 +9,8 @@ unify_grid: FALSE
 unify_grid_resolution: 1
 
 # initial_conditions:
-#   month: 5
-#   year: 2022
+#   month: 4
+#   year: 2023
 
 shapefiles:
   crcsas: "/data/shapefiles/CRC_SAS.shp"
@@ -22,7 +22,7 @@ images:
   climax: "./logos/logo-climax.png"
   
 output_langs: ["en", "es", "pt"]
-output_plots: ["prob.fcst"]  # ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst"]
+output_plots: ["prob.fcst", "sissa"]  # ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst", "sissa"]
 output_leadtimes: [1]  # [1, 2, 3, 4, 5, 6, 7]
 output_trgt_type: ["trimesters"]  # ["trimesters", "months"]
 
@@ -43,7 +43,9 @@ acc-cpt:
           prcp: "cpt_invalid_prcp_values"
         hindcasts: 
           prcp: "cpt_invalid_prcp_values"
-  output_folder: "/data/acc-cpt/plots/web-crc-sas"
+  output_folder:
+    crcsas: "/data/acc-cpt/plots/web-crc-sas"
+    sissa: "/data/acc-cpt/plots/web-sissa"
   suavizar_graficos: TRUE
 
 ereg:  
@@ -55,7 +57,9 @@ ereg:
     calibrated_data: 
       forecasts: "/data/ereg/generados/nmme_output/rt_forecasts"
       hindcasts: "/data/ereg/generados/nmme_output/comb_forecasts"
-  output_folder: "/data/ereg/generados/nmme_figuras/web-crc-sas"
+  output_folder: 
+    crcsas: "/data/ereg/generados/nmme_figuras/web-crc-sas"
+    sissa: "/data/ereg/generados/nmme_figuras/web-sissa"
   suavizar_graficos: TRUE
   dry_mask_file: "/data/ereg/descargas/NMME/dry_mask.nc"
   apply_dry_mask: TRUE

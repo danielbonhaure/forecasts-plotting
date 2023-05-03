@@ -660,7 +660,10 @@ FcstProbabilisticData <- R6::R6Class(
     add_categories = function(prob_data_df = NULL, 
                               below_col = NULL,
                               normal_col = NULL, 
-                              above_col = NULL) {
+                              above_col = NULL,
+                              cat_below = "below",
+                              cat_normal = "normal",
+                              cat_above = "above") {
       data_df <- prob_data_df
       # Cuando prob_data_df es NULL, el método fue invocado
       # por una instancia de la clase, por lo tanto, es self$data
@@ -677,15 +680,15 @@ FcstProbabilisticData <- R6::R6Class(
           (!!as.name(above_col) > 
              !!as.name(normal_col) & 
              !!as.name(above_col) > 
-             !!as.name(below_col)) ~ "above",
+             !!as.name(below_col)) ~ cat_above,
           (!!as.name(normal_col) > 
              !!as.name(above_col) & 
              !!as.name(normal_col) > 
-             !!as.name(below_col)) ~ "normal",
+             !!as.name(below_col)) ~ cat_normal,
           (!!as.name(below_col) > 
              !!as.name(normal_col) & 
              !!as.name(below_col) > 
-             !!as.name(above_col)) ~ "below",
+             !!as.name(above_col)) ~ cat_below,
           ((!!as.name(normal_col) > 
              !!as.name(above_col) & 
              !!as.name(normal_col) == 
@@ -697,7 +700,7 @@ FcstProbabilisticData <- R6::R6Class(
            (!!as.name(normal_col) == 
              !!as.name(above_col) & 
              !!as.name(normal_col) ==
-             !!as.name(below_col))) ~ "normal",
+             !!as.name(below_col))) ~ cat_normal,
           (!!as.name(below_col) > 
              !!as.name(normal_col) & 
              !!as.name(below_col) == 
@@ -705,7 +708,8 @@ FcstProbabilisticData <- R6::R6Class(
           TRUE ~ NA_character_
         )) %>%
         dplyr::mutate(
-          category = factor(category, levels = c("below", "normal", "above"))
+          category = factor(category, 
+                            levels = c(cat_below, cat_normal, cat_above))
         )
       # Reportar casos en los que no se pudo determinar la categoría
       casos_con_below_y_above_superiores <- data_df %>% 

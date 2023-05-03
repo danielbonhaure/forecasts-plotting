@@ -106,6 +106,7 @@ base_files_struct <- tibble::tibble(
   det_hcst_file = character(),
   prob_fcst_file = character(),
   prob_hcst_file = character(),
+  prob_xtrm_file = character(),
   obs_file = character(),
   uncalibrated_fcst_file = character(),
   hcst_first_year = numeric(),
@@ -133,7 +134,8 @@ if ( length(cpt_base_files) == 0 ) {
       det_fcst_file = paste0(basename, '_forecast.nc'),
       det_hcst_file = paste0(basename, '_hindcast.nc'),
       prob_fcst_file = paste0(basename, '_prob_forecast.nc'),
-      prob_hcst_file = paste0(basename, '_prob_hindcast.nc')
+      prob_hcst_file = paste0(basename, '_prob_hindcast.nc'),
+      prob_xtrm_file = ''
     ) %>%
     dplyr::mutate(
       obs_file = paste0(
@@ -194,7 +196,11 @@ if ( length(ereg_base_files) == 0 ) {
       det_fcst_file = paste0('determin_', basename, '.nc'),
       det_hcst_file = paste0('determin_', stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc'),
       prob_fcst_file = paste0(basename, '.nc'),
-      prob_hcst_file = paste0(stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc')
+      prob_hcst_file = paste0(stringr::str_remove(basename, ereg_regex_init_year_str), '_hind.nc'),
+      prob_xtrm_file = stringr::str_replace(paste0(basename, '.nc'),
+                                            pattern = paste0('^(', ereg_regex_variables, ')', 
+                                                             '_(', ereg_regex_modelos, ')_'),
+                                            replacement = '\\1_extremes_\\2_')
     ) %>%
     dplyr::mutate(
       trimester = stringr::str_extract(basename, ereg_regex_months)) %>%
@@ -439,7 +445,7 @@ for ( i in indices ) {
         wlo = min(corr_df$longitude),
         elo = max(corr_df$longitude)), 
       output_file_abspath = paste0(
-        global_config$get_config(base_file$type)$output_folder, "/", 
+        global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
         base_file$basename, "_corr_", lang,".html"),
       breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
       colors = paleta_completa, 
@@ -468,6 +474,10 @@ for ( i in indices ) {
         dplyr::select(longitude, latitude))
     prob_gridded_data <- are_points_gridded(
       points_df = datos_entrada$pred_prob_fcst_data$data %>%
+        dplyr::filter(year == data_year) %>%
+        dplyr::select(longitude, latitude))
+    xtrm_gridded_data <- are_points_gridded(
+      points_df = datos_entrada$pred_prob_xtrm_data$data %>%
         dplyr::filter(year == data_year) %>%
         dplyr::select(longitude, latitude))
     
@@ -538,7 +548,7 @@ for ( i in indices ) {
           wlo = min(anom_df$longitude),
           elo = max(anom_df$longitude)), 
         output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder, "/", 
+          global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
           base_file$basename, "_anom_", lang, ".html"),
         breaks = breaks,
         colors = paleta_completa, 
@@ -617,7 +627,7 @@ for ( i in indices ) {
           wlo = min(det_fcst_df$longitude),
           elo = max(det_fcst_df$longitude)), 
         output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder, "/", 
+          global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
           base_file$basename, "_det_fcst_", lang, ".html"),
         breaks = breaks,
         colors = paleta_completa, 
@@ -705,7 +715,7 @@ for ( i in indices ) {
           wlo = min(prob_fcst_df$longitude),
           elo = max(prob_fcst_df$longitude)), 
         output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder, "/", 
+          global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
           base_file$basename, "_prob_fcst_", lang, ".html"),
         breaks = breaks,
         colors_below = paleta_below, 
@@ -772,7 +782,7 @@ for ( i in indices ) {
             wlo = min(uncal_fcst_df$longitude),
             elo = max(uncal_fcst_df$longitude)), 
           output_file_abspath = paste0(
-            global_config$get_config(base_file$type)$output_folder, "/", 
+            global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
             base_file$basename, "_uncal_fcst_", lang, ".html"),
           breaks = breaks,
           colors = paleta_completa, 
@@ -781,7 +791,122 @@ for ( i in indices ) {
       }
       
     }  # FIN DEL IF: if ( !is.null(datos_entrada$uncalibrated_fcst_data) )
-  
+
+    
+    #
+    # Crear gráficos de probabilidades de eventos extremos para el SISSA
+    #  
+    
+    if ( "sissa" %in% output_plots ) {
+      
+    logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos Extremos SISSA  para el año: {data_year}"))
+    
+    # Definir df con los datos a graficar
+    prob_xtrm_df <- datos_entrada$pred_prob_xtrm_data$data %>%
+      dplyr::filter(
+        year == data_year) %>%
+      dplyr::rename(
+        prob_below_20 = paste0('prob_', base_file$variable, '_below'),
+        prob_a20_b80 = paste0('prob_', base_file$variable, '_normal'),
+        prob_above_80 = paste0('prob_', base_file$variable, '_above')) %>%
+      dplyr::select(
+        -init_time, -year, -month) %>%
+      exclude_points_outside_buffered_crcsas() %>%
+      { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+        InterpolationHelper$interp_kriging(
+          data_df = ., 
+          cols_to_interp = c("prob_below_20", "prob_a20_b80", "prob_above_80"), 
+          new_grid_sf = new_grid_sf,
+          dependent_col = 'prob_a20_b80')
+        else . } %>%
+      exclude_points_outside_crcsas() %>%
+      FcstProbabilisticData$add_categories(
+        prob_data_df = ., 
+        below_col = "prob_below_20", 
+        normal_col = "prob_a20_b80", 
+        above_col = "prob_above_80",
+        cat_below = "below-20",
+        cat_normal = "a20-b80",
+        cat_above = "above-80") 
+    
+    # La interpolación puede hacer que haya puntos por sobre la línea de
+    # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+    prob_xtrm_df <- prob_xtrm_df %>%
+      dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+    
+    # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+    prob_xtrm_df <- prob_xtrm_df %>%
+      { if ( base_file$obs_data_source == "chirps" )
+        dplyr::mutate(.,
+                      prob_below = ifelse(latitude < -46, NA_integer_, prob_below),
+                      prob_normal = ifelse(latitude < -46, NA_integer_, prob_normal),
+                      prob_above = ifelse(latitude < -46, NA_integer_, prob_above),
+                      category = ifelse(latitude < -46, NA_integer_, as.character(category)))
+        else . }
+    
+    # Aplicar unname a todas las columnas porque las columnas de 
+    # tipo named causan errores el graficar.
+    prob_xtrm_df <- prob_xtrm_df %>% 
+      dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
+    
+    # Definir paleta de colores de la NOAA
+    # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
+    noaa_escala_azules <- RColorBrewer::brewer.pal(9, "PuBu")
+    noaa_escala_rojos <- RColorBrewer::brewer.pal(9, "YlOrBr")
+    
+    # Definir paleta de colores
+    breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
+    paleta_below_20 <- if (base_file$variable == "prcp") noaa_escala_rojos else noaa_escala_azules
+    paleta_above_80 <- if (base_file$variable == "prcp") noaa_escala_azules else noaa_escala_rojos
+    
+    # Crear gráficos
+    for ( lang in output_langs ) {
+      prob_xtrm_plot_below_20 <- PlotsHelper$graficar_mapa(
+        data_df = prob_xtrm_df %>% 
+          dplyr::select(longitude, latitude, value = prob_below_20) %>%
+          dplyr::mutate(value = value * 100), 
+        gridded_data = xtrm_gridded_data,
+        main_title = PlotsHelper$definir_titulo("prob.below.20", base_file, lang, data_year), 
+        legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.20", base_file, lang), 
+        data_type = base_file$type, lang = lang,
+        spatial_domain = list(
+          nla = max(prob_xtrm_df$latitude),
+          sla = min(prob_xtrm_df$latitude),
+          wlo = min(prob_xtrm_df$longitude),
+          elo = max(prob_xtrm_df$longitude)), 
+        output_file_abspath = paste0(
+          global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+          base_file$basename, "_prob_below_20_", lang, ".html"),
+        breaks = breaks,
+        colors = paleta_below_20, 
+        dry_mask_df = dry_mask_trgt_months,
+        save_map = TRUE)
+    }
+    for ( lang in output_langs ) {
+      prob_xtrm_plot_above_80 <- PlotsHelper$graficar_mapa(
+        data_df = prob_xtrm_df %>% 
+          dplyr::select(longitude, latitude, value = prob_above_80) %>%
+          dplyr::mutate(value = value * 100), 
+        gridded_data = xtrm_gridded_data,
+        main_title = PlotsHelper$definir_titulo("prob.above.80", base_file, lang, data_year), 
+        legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.80", base_file, lang), 
+        data_type = base_file$type, lang = lang,
+        spatial_domain = list(
+          nla = max(prob_xtrm_df$latitude),
+          sla = min(prob_xtrm_df$latitude),
+          wlo = min(prob_xtrm_df$longitude),
+          elo = max(prob_xtrm_df$longitude)), 
+        output_file_abspath = paste0(
+          global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+          base_file$basename, "_prob_above_80_", lang, ".html"),
+        breaks = breaks,
+        colors = paleta_above_80, 
+        dry_mask_df = dry_mask_trgt_months,
+        save_map = TRUE)
+    }
+    }  # fin del if que genera gráficos probabilísticos SISSA
+    
+    
   }  # FIN DEL FOR: for (data_year in anhos_pronosticados)
 
 }  # FIN DEL FOR: for ( i in 1:nrow(base_files) )  

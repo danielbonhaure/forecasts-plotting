@@ -312,7 +312,8 @@ DataTypeHelper$data_expressed_in_anomalies = function(...) {
 InterpolationHelper <- R6::R6Class(
   classname = "InterpolationHelper",
   public = list(
-    interp_kriging = function(data_df, cols_to_interp, new_grid_sf) {
+    interp_kriging = function(data_df, cols_to_interp, new_grid_sf, 
+                              dependent_col = "normal") {
       ##### Kriging  
       
       # El método Kriging es un poco más complicado que el IDW, ya que requiere 
@@ -326,7 +327,8 @@ InterpolationHelper <- R6::R6Class(
       
       # Se deben eliminar los NA para poder crear los variogramas
       datos_df <- data_df %>%
-        dplyr::filter(dplyr::across(dplyr::any_of(cols_to_interp), ~ !is.na(.)))
+        dplyr::filter(dplyr::if_all(.cols = dplyr::any_of(cols_to_interp), 
+                                    .fns = ~ !is.na(.)))
       
       # Los variogramas se crean usando objetos sp, para crearlos primero
       # es necesario crear un objeto sf
@@ -338,7 +340,7 @@ InterpolationHelper <- R6::R6Class(
       
       # Interpolar las variables, una a la vez
       interp_variables <- purrr::map(
-        .x = if (length(cols_to_interp) > 1) cols_to_interp[!grepl('normal', cols_to_interp)] else cols_to_interp,
+        .x = if (length(cols_to_interp) > 1) cols_to_interp[!grepl(dependent_col, cols_to_interp)] else cols_to_interp,
         .f = function(interp_col, datos_sp, new_grid_sf) {
           
           # Define interpolation formula
@@ -413,9 +415,9 @@ InterpolationHelper <- R6::R6Class(
       if ( length(cols_to_interp) > 1 )
         datos_interp <- datos_interp %>%
         dplyr::mutate(
-          !!cols_to_interp[grepl('normal', cols_to_interp)] := 
+          !!cols_to_interp[grepl(dependent_col, cols_to_interp)] := 
             1 - rowSums(dplyr::across(
-              cols_to_interp[!grepl('normal', cols_to_interp)])))
+              cols_to_interp[!grepl(dependent_col, cols_to_interp)])))
       
       # Retornar resultado
       return ( datos_interp )

@@ -766,6 +766,18 @@ PlotsHelper <- R6::R6Class(
                                   "pt" = "Previsão original para")
         main_title <- glue::glue("{uncal_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
                                  "\n{uncalibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+      } else if (data_type == "prob.below.20") {
+        prob_below_20_desc <- switch(lang, "en" = "Prob. event below 20% of the historical range", 
+                                     "es" = "Prob. evento por debajo del 20% del rango histórico",
+                                     "pt" = "Prob. evento abaixo de 20% da faixa histórica")
+        main_title <- glue::glue("{prob_below_20_desc} ({tolower(variable_str)}), {tolower(valid_for)} {month_year}",
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+      } else if (data_type == "prob.above.80") {
+        prob_above_80_desc <- switch(lang, "en" = "Prob. event above 80% of the historical range", 
+                                     "es" = "Prob. evento por encima del 80% del rango histórico",
+                                     "pt" = "Prob. evento acima de 80% da faixa histórica")
+        main_title <- glue::glue("{prob_above_80_desc} ({tolower(variable_str)}), {tolower(valid_for)} {month_year}",
+                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
       } 
       
       # Retornar título real
@@ -804,7 +816,11 @@ PlotsHelper <- R6::R6Class(
         legend_title <- glue::glue("")
       } else if (data_type == "uncal.fcst") {
         legend_title <- glue::glue("{variable_str} ({variable_unit})")
-      } 
+      } else if (data_type == "prob.below.20") {
+        legend_title <- glue::glue("{variable_str} <20 (%)")
+      }else if (data_type == "prob.above.80") {
+        legend_title <- glue::glue("{variable_str} >80 (%)")
+      }
       
       # Retornar título real
       return ( legend_title )
