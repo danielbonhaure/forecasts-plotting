@@ -1,15 +1,57 @@
 
-########################
-## Install R packages ##
-########################
+##################################################################
+##                           README                             ##
+##################################################################
+## Este Dockerfile permite crear un contendor con todos los pa- ##
+## quetes y todas las configuraciones necesarias para correr el ##
+## control de calidad sobre datos diarios.                      ##
+## Al correr el contenedor es necesario definir, como variables ##
+## de entorno, los datos de acceso a la Base de Datos.          ##
+##################################################################
+
+
+
+##########################
+## Set GLOBAL arguments ##
+##########################
+
+# Set R version
+ARG R_VERSION=4.2
+
+# Set APP installation folder
+ARG APP_HOME=/opt/plotter
+
+# App data folder
+ARG APP_DATA=/data
+
+# Set user name and id
+ARG USR_NAME="nonroot"
+ARG USER_UID="1000"
+
+# Set group name and id
+ARG GRP_NAME="nonroot"
+ARG USER_GID="1000"
+
+# Set users passwords
+ARG ROOT_PWD="root"
+ARG USER_PWD=$USR_NAME
+
+# Set global CRON args
+ARG CRON_TIME_STR="0 12 18 * *"
+
+
+
+#################################
+## Stage 1: Install R packages ##
+#################################
 
 # Create image
-FROM rocker/r-ver:4.2 AS r_builder
+FROM rocker/r-ver:${R_VERSION} AS r_builder
 
-# set environment variables
+# Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
-# install OS packages
+# Install OS packages
 RUN apt-get -y -qq update && \
     apt-get -y -qq upgrade && \
     apt-get -y -qq --no-install-recommends install \
@@ -57,12 +99,12 @@ RUN R -e "options(warn=2); install.packages('RCurl', repos=${CRAN_MIRROR}, verbo
 
 
 
-########################
-## CREATE FINAL IMAGE ##
-########################
+##############################################
+## Stage 2: Copy the R installation folders ##
+##############################################
 
-# Create final image
-FROM rocker/r-ver:4.2 AS r_image
+# Create image
+FROM rocker/r-ver:${R_VERSION} AS r_final
 
 # set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -78,29 +120,11 @@ RUN apt-get -y -qq update && \
         # to be able to use units, a dependency of sf
         libudunits2-dev \
         # to be able to use htmlwidgets::saveWidget with selfcontained = TRUE
-        pandoc \
-        # install Tini (https://github.com/krallin/tini#using-tini)
-        tini \
-        # to see process with pid 1
-        htop \
-        # to run sudo
-        sudo \
-        # to allow edit files
-        vim \
-        # to run process with cron
-        cron && \
+        pandoc && \
     rm -rf /var/lib/apt/lists/*
-
-# Setup cron to allow it run as a non root user
-RUN sudo chmod u+s $(which cron)
 
 # Install R packages from r_builder
 # https://forums.docker.com/t/using-multi-stage-docker-build-for-slimming-down-images-with-r-dependency/67967
-# OBS: La imagen oficial de R, r-base, se crea usando la rama testing de debian y R se instala usando apt, lo
-# que implica que los datos a copiar sean: 1- los ejecutables /usr/bin/R y /usr/bin/Rscript, y 2- las carpetas
-# /usr/lib/R y /usr/local/lib/R/site-library. Sin embargo, cuando se usa la imagen rocker/r-ver, creada usando
-# la rama estable de debian, los datos a copiar son los siguientes: 1- los ejecutables /usr/local/bin/R y 
-# /usr/local/bin/Rscript, y 2- las carpetas /usr/local/lib/R y /usr/local/lib/R/site-library
 RUN mkdir -p /usr/local/lib/R \
              /usr/local/lib/R/site-library
 COPY --from=r_builder /usr/local/bin/R /usr/local/bin/R
@@ -109,39 +133,35 @@ COPY --from=r_builder /usr/local/lib/R /usr/local/lib/R
 COPY --from=r_builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=r_builder /tmp /tmp
 
-# Create work directory
-RUN mkdir -p /opt/plotter
-
-# Copy app code
-COPY . /opt/plotter
-
-# Create input and output folders (these folders are too big so they must be used them as volumes)
-RUN mkdir -p /data/shapefiles
-RUN mkdir -p /data/acc-cpt/input/predictands
-RUN mkdir -p /data/acc-cpt/input/predictors
-RUN mkdir -p /data/acc-cpt/output
-RUN mkdir -p /data/acc-cpt/plots/web-crc-sas
-RUN mkdir -p /data/ereg/generados/nmme_output
-RUN mkdir -p /data/ereg/generados/nmme_output/rt_forecasts
-RUN mkdir -p /data/ereg/generados/nmme_output/comb_forecasts
-RUN mkdir -p /data/ereg/generados/nmme_figuras/web-crc-sas
-RUN mkdir -p /data/ereg/descargas/NMME
+# Set R libs paths (see: https://stat.ethz.ch/R-manual/R-devel/library/base/html/libPaths.html)
+ENV R_LIBS="/usr/local/lib/R/library"
+ENV R_LIBS_USER="/usr/local/lib/R/site-library"
+ENV R_LIBS_SITE="/usr/local/lib/R/site-library"
 
 
 
-#######################
-## SETUP FINAL IMAGE ##
-#######################
+###################################
+## Stage 3: Create non-root user ##
+###################################
 
-# Import final image
-FROM r_image
+# Create image
+FROM r_final AS non_root
 
-# Set passwords
-ARG ROOT_PWD="nonroot"
-ARG NON_ROOT_PWD="nonroot"
+# Load global USER args
+ARG USR_NAME
+ARG USER_UID
+ARG GRP_NAME
+ARG USER_GID
+ARG ROOT_PWD
+ARG USER_PWD
 
-# Pasar a root
-USER root
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # to run sudo
+        sudo && \
+    rm -rf /var/lib/apt/lists/*
 
 # Modify root password
 RUN echo "root:$ROOT_PWD" | chpasswd
@@ -149,80 +169,218 @@ RUN echo "root:$ROOT_PWD" | chpasswd
 # Create a non-root user, so the container can run as non-root
 # OBS: the UID and GID must be the same as the user that own the
 # input and the output volumes, so there isn't perms problems!!
-ARG NON_ROOT_USR="nonroot"
-ARG NON_ROOT_UID="1000"
-ARG NON_ROOT_GID="1000"
-RUN groupadd --gid $NON_ROOT_GID $NON_ROOT_USR
-RUN useradd --uid $NON_ROOT_UID --gid $NON_ROOT_GID --comment "Non-root User Account" --create-home $NON_ROOT_USR
+# Se recomienda crear usuarios en el contendor de esta manera,
+# ver: https://nickjanetakis.com/blog/running-docker-containers-as-a-non-root-user-with-a-custom-uid-and-gid
+# Se agregar --no-log-init para prevenir un problema de seguridad,
+# ver: https://jtreminio.com/blog/running-docker-containers-as-current-host-user/
+RUN groupadd --gid $USER_GID $GRP_NAME
+RUN useradd --no-log-init --uid $USER_UID --gid $USER_GID --shell /bin/bash \
+    --comment "Non-root User Account" --create-home $USR_NAME
 
-# Modify the password of the non-root user
-RUN echo "$NON_ROOT_USR:$NON_ROOT_PWD" | chpasswd
+# Modify the password of non-root user
+RUN echo "$USR_NAME:$USER_PWD" | chpasswd
 
-# Add non-root user to sudoers
-RUN adduser $NON_ROOT_USR sudo
+# Add non-root user to sudoers and to adm group
+# The adm group was added to allow non-root user to see logs
+RUN adduser $USR_NAME sudo && \
+    adduser $USR_NAME adm
 
-# Change owner of source code
-RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/plotter
+# To allow sudo without password
+# RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
+#     chmod 0440 /etc/sudoers.d/$USR_NAME
 
-# Setup cron for run once a month
-ARG CRON_TIME_STR="0 12 18 * *"
-RUN (echo "${CRON_TIME_STR} /usr/local/bin/Rscript /opt/plotter/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+
+
+###########################################
+## Stage 4: Install management packages  ##
+###########################################
+
+# Create image
+FROM non_root AS base_builder
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # install Tini (https://github.com/krallin/tini#using-tini)
+        tini \
+        # to see process with pid 1
+        htop \
+        # to allow edit files
+        vim \
+        # to run process with cron
+        cron && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup cron to allow it run as a non root user
+RUN chmod u+s $(which cron)
+
+# Add Tini (https://github.com/krallin/tini#using-tini)
+ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
+
+
+
+####################################
+## Stage 5: Install and setup APP ##
+####################################
+
+# Create image
+FROM base_builder AS app_builder
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew ARGs
+ARG APP_HOME
+ARG APP_DATA
+ARG USR_NAME
+ARG GRP_NAME
+
+# Renew CRON ARGs
+ARG CRON_TIME_STR
+
+# Create APP_HOME folder and change its owner
+RUN mkdir -p $APP_HOME && chown -R $USR_NAME:$GRP_NAME $APP_HOME
+
+# Copy project
+COPY --chown=$USR_NAME:$GRP_NAME . $APP_HOME
+
+# Create input and output folders (these folders are too big so they must be used them as volumes)
+RUN mkdir -p ${APP_DATA}/shapefiles
+RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictands
+RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictors
+RUN mkdir -p ${APP_DATA}/acc-cpt/output
+RUN mkdir -p ${APP_DATA}/acc-cpt/plots/web-crc-sas
+RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output
+RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/rt_forecasts
+RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/comb_forecasts
+RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_figuras/web-crc-sas
+RUN mkdir -p ${APP_DATA}/ereg/descargas/NMME
+
+# Crear archivo de configuración de CRON
+RUN printf "\n\
+# Setup cron to run files processor \n\
+${CRON_TIME_STR} /usr/local/bin/Rscript ${APP_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1\n\
+\n" > /tmp/crontab.txt
+RUN (echo "${CRON_TIME_STR} /usr/local/bin/Rscript ${APP_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") 
+
+# Crear script para verificar salud del contendor
+RUN printf "#!/bin/bash\n\
+if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
+   [ \$(ps | grep Main.R | wc -l) == 0 ] \n\
+then \n\
+  exit 1 \n\
+else \n\
+  exit 0 \n\
+fi \n\
+\n" > /opt/check-healthy.sh
+
+# Definir variables de entorno para el contendor final
+ENV CRON_TIME_STR=${CRON_TIME_STR}
+
+# Crear script de inicio.
+RUN printf "#!/bin/bash \n\
+set -e \n\
+\n\
+# Reemplazar tiempo ejecución automática del procesador de archivos \n\
+crontab -l | sed \"/Main.R/ s|^\S* \S* \S* \S* \S*|\$CRON_TIME_STR|g\" | crontab - \n\
+\n\
+# Ejecutar cron \n\
+cron -fL 15 \n\
+\n" > /startup.sh
+RUN chmod a+x /startup.sh
+
+
+
+############################################
+## Stage 6: Setup and run final APP image ##
+############################################
+
+# Create image
+FROM app_builder AS final_app_image
+
+# Become root
+USER root
+
+# Renew the ARG
+ARG USR_NAME
+
+# Setup cron to allow it run as a non root user
+RUN chmod u+s $(which cron)
+
+# Setup cron
+RUN (cat /tmp/crontab.txt) | crontab -u $USR_NAME -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
 
 # Run your program under Tini (https://github.com/krallin/tini#using-tini)
-CMD ["cron", "-f"]
+CMD [ "bash", "-c", "/startup.sh" ]
 # or docker run your-image /your/program ...
 
+# Verificar si hubo alguna falla en la ejecución del replicador
+HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
+
 # Access non-root user directory
-WORKDIR /home/$NON_ROOT_USR
+WORKDIR /home/$USR_NAME
 
 # Switch back to non-root user to avoid accidental container runs as root
-USER $NON_ROOT_USR
+USER $USR_NAME
+
+
+
+####################################
+## Stage 7: Set the DEFAULT image ##
+####################################
+
+FROM final_app_image
+
 
 
 # CONSTRUIR CONTENEDOR
 # export DOCKER_BUILDKIT=1
-# docker build --file Dockerfile \
-#        --build-arg ROOT_PWD=nonroot \
-#        --build-arg NON_ROOT_PWD=nonroot \
-#        --build-arg NON_ROOT_UID=$(stat -c "%u" .) \
-#        --build-arg NON_ROOT_GID=$(stat -c "%g" .) \
-#        --build-arg CRON_TIME_STR="0 12 18 * *" \
-#        --tag plotter:latest .
+# docker build --force-rm \
+#   --target final_app_image \
+#   --tag plotter:latest .
+#   --build-arg USER_UID=$(stat -c "%u" .) \
+#   --build-arg USER_GID=$(stat -c "%g" .) \
+#   --build-arg CRON_TIME_STR="0 12 18 * *" \
+#   --file Dockerfile .
 
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name plot-pronos \
-#        --volume <path-to-folder>:/data/acc-cpt/input/predictors \
-#        --volume <path-to-folder>:/data/acc-cpt/input/predictands \
-#        --volume <path-to-folder>:/data/acc-cpt/output \
-#        --volume <path-to-folder>:/data/acc-cpt/plots/web-crc-sas \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
-#        --detach plotter:latest
+#   --volume <path-to-folder>:/data/acc-cpt/input/predictors \
+#   --volume <path-to-folder>:/data/acc-cpt/input/predictands \
+#   --volume <path-to-folder>:/data/acc-cpt/output \
+#   --volume <path-to-folder>:/data/acc-cpt/plots/web-crc-sas \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
+#   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
+#   --detach plotter:latest
 
 # CORRER MANUALMENTE
 # docker run --name plot-pronos \
-#        --volume <path-to-folder>:/data/acc-cpt/input/predictors \
-#        --volume <path-to-folder>:/data/acc-cpt/input/predictands \
-#        --volume <path-to-folder>:/data/acc-cpt/output \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
-#        --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
-#        --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#        --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
-#        --volume <path-to-file>:/opt/plotter/config.yaml \
-#        --rm plotter:latest /usr/local/bin/Rscript /opt/plotter/Main.R
+#   --volume <path-to-folder>:/data/acc-cpt/input/predictors \
+#   --volume <path-to-folder>:/data/acc-cpt/input/predictands \
+#   --volume <path-to-folder>:/data/acc-cpt/output \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
+#   --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
+#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
+#   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
+#   --volume <path-to-file>:/opt/plotter/config.yaml \
+#   --rm plotter:latest /usr/local/bin/Rscript /opt/plotter/Main.R
 
