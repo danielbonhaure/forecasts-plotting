@@ -1,0 +1,94 @@
+
+##################################################################
+##                           README                             ##
+##################################################################
+## Este Dockerfile permite crear un contendor con RStudio (co-  ##
+## rriendo en modo WEB), con todos los paquetes necesarios para ##
+## levantar un ambiente de desarrollo.                          ##
+##################################################################
+
+
+
+#################################
+## Stage 1: Install R packages ##
+#################################
+
+
+# Create image
+FROM rocker/rstudio:4.2
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq --no-install-recommends install \
+        # to install ncdf4  (R)
+        libnetcdf-dev \
+        # to install anomalize (R)
+        libcurl4-openssl-dev libssl-dev \
+        # to install data.tabla (R)
+        libz-dev \
+        # to install RPostgres (R)
+        libpq-dev \
+        # to install sf (R)
+        libgdal-dev \
+        # to install units, a dependency of sf (R)
+        libudunits2-dev \
+        # Management packages
+        git htop vim iputils-ping iproute2
+
+# set CRAN mirror
+ARG CRAN_MIRROR="getOption('repos')"
+
+# Install R packages
+RUN R -e "options(warn=2); install.packages('ncdf4', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('dplyr', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('tibble', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('sf', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('stringr', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('stringi', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('tidyr', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('purrr', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('yaml', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('glue', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('lubridate', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('htmltools', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('leaflet', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('leafem', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('rnaturalearth', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('R6', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('forcats', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('tidync', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('metR', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('logger', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('htmlwidgets', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('here', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('gstat', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('automap', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('leaflet.extras2', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('RCurl', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+
+
+
+#####################################################
+## Usage: Commands to Build and Run this Container ##
+#####################################################
+
+
+# Build container
+#
+# docker build \
+#  --file Dockerfile.rstudio \
+#  --tag plotter-rstudio:latest .
+
+# Run container
+#
+# docker run -ti --rm \
+#  --name plotter-rstudio \
+#  --env DISABLE_AUTH=true \
+#  --volume $(pwd):/home/rstudio/forecasts-plotting \
+#  --workdir /home/rstudio/forecasts-plotting \
+#  --publish 127.0.0.1:8787:8787 \
+#  --detach plotter-rstudio:latest
+
+# In a Web Browser, go to http://localhost:8787/
+
+
