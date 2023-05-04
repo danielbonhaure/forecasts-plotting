@@ -254,10 +254,12 @@ RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictands
 RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictors
 RUN mkdir -p ${APP_DATA}/acc-cpt/output
 RUN mkdir -p ${APP_DATA}/acc-cpt/plots/web-crc-sas
+RUN mkdir -p ${APP_DATA}/acc-cpt/plots/web-sissa
 RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output
 RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/rt_forecasts
 RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/comb_forecasts
 RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_figuras/web-crc-sas
+RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_figuras/web-sissa
 RUN mkdir -p ${APP_DATA}/ereg/descargas/NMME
 
 # Crear archivo de configuración de CRON
@@ -276,7 +278,8 @@ then \n\
 else \n\
   exit 0 \n\
 fi \n\
-\n" > /opt/check-healthy.sh
+\n" > /check-healthy.sh
+RUN chmod a+x /check-healthy.sh
 
 # Definir variables de entorno para el contendor final
 ENV CRON_TIME_STR=${CRON_TIME_STR}

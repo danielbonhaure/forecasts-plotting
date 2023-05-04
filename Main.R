@@ -4,7 +4,19 @@
 # -----------------------------------------------------------------------------#
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 1. Inicializar entorno ----
+# ---- PASO 1. Crear archivo con PID, para verificar salud del contenedor ----
+
+# Open a new file for writing
+fileConn <- file("/tmp/plotter.pid", "w")
+# Write some text to the file
+writeLines(as.character(Sys.getpid()), fileConn)
+# Close the file connection
+close(fileConn)
+
+# ------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------#
+# ---- PASO 2. Inicializar entorno ----
 
 # i. Cambiar carpeta de trabajo actual a la de este script
 getScriptPath <- function(){
@@ -48,7 +60,7 @@ rm(pack, list.of.packages); gc()
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 2. Cargar librerias propias e iniciar script ----
+# ---- PASO 3. Cargar librerias propias e iniciar script ----
 
 # Cargar librerias
 source(here::here("lib", "Configuracion.R"), echo = FALSE, chdir = TRUE)
@@ -63,7 +75,7 @@ source(here::here("ExpresionesRegulares.R"), echo = FALSE, chdir = TRUE)
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 3. Leer archivo de configuracion y definir parámetros globales -----
+# ---- PASO 4. Leer archivo de configuracion y definir parámetros globales -----
 
 # Leer configuración
 global_config <- Config$new(here::here('config.yaml'))
@@ -94,7 +106,7 @@ output_plots <- global_config$get_config("output_plots")
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 4. Identificar archivos a graficar -----
+# ---- PASO 5. Identificar archivos a graficar -----
 
 
 # Definir estructura
@@ -280,7 +292,7 @@ rm(all_base_files, cpt_base_files, ereg_base_files); invisible(gc())
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 5. Graficar -----
+# ---- PASO 6. Graficar -----
 
 # Definir índices a iterar
 indices <- c()
@@ -910,5 +922,13 @@ for ( i in indices ) {
   }  # FIN DEL FOR: for (data_year in anhos_pronosticados)
 
 }  # FIN DEL FOR: for ( i in 1:nrow(base_files) )  
+
+# ------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------#
+# ---- PASO 7. Borrar archivo con PID, para verificar salud del contenedor ----
+
+# Remove the file
+file.remove("/tmp/plotter.pid")
 
 # ------------------------------------------------------------------------------
