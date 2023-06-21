@@ -166,7 +166,7 @@ PlotsHelper <- R6::R6Class(
     graficar_mapa = function(data_df, gridded_data, spatial_domain, 
                              main_title, legend_title, data_type, lang,
                              output_file_abspath, dry_mask_df,
-                             breaks = NULL, colors = NULL, 
+                             breaks = NULL, colors = NULL, rev_legend = FALSE,
                              save_map = TRUE) {
       
       # Definir texto a ser utilizados
@@ -227,6 +227,12 @@ PlotsHelper <- R6::R6Class(
         circle_radius <- ifelse(min_distance < 2, 3, 5)
       }
       
+      # Invertir colores en escala, cuando sea necesario
+      if ( rev_legend ) {
+        colors <- rev(colors)
+        breaks <- rev(breaks)
+      }
+
       # Crear mapa con leaflet
       m <- leaflet::leaflet() %>%
         leaflet::fitBounds(

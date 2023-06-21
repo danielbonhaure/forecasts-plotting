@@ -704,14 +704,22 @@ for ( i in indices ) {
     
     # Definir paleta de colores de la NOAA
     # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
+    # Ver: https://www.cpc.ncep.noaa.gov/products/predictions/multi_season/13_seasonal_outlooks/color/churchill.php
     noaa_escala_azules <- tail(RColorBrewer::brewer.pal(9, "PuBu"), 7)
-    noaa_escala_rojos <- tail(RColorBrewer::brewer.pal(9, "YlOrBr"), 7)
+    noaa_escala_rojos <- tail(RColorBrewer::brewer.pal(9, "YlOrRd"), 7)
+    noaa_escala_verdes <- tail(RColorBrewer::brewer.pal(9, "BuGn"), 7)
+    noaa_escala_marrones <- tail(RColorBrewer::brewer.pal(9, "YlOrBr"), 7)
     
     # Definir paleta de colores
     breaks <- c(0.33, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1)
-    paleta_below <- if (base_file$variable == "prcp") noaa_escala_rojos else noaa_escala_azules
+    if (base_file$variable == "prcp") {
+      paleta_below <- noaa_escala_marrones
+      paleta_above <- noaa_escala_verdes
+    } else {
+      paleta_below <- noaa_escala_azules
+      paleta_above <-noaa_escala_rojos
+    }
     paleta_normal <- tail(RColorBrewer::brewer.pal(9, 'Greys'), 7)
-    paleta_above <- if (base_file$variable == "prcp") noaa_escala_azules else noaa_escala_rojos
     
     # Crear gráfico
     for ( lang in output_langs ) {
@@ -861,15 +869,20 @@ for ( i in indices ) {
     prob_xtrm_df <- prob_xtrm_df %>% 
       dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
     
-    # Definir paleta de colores de la NOAA
-    # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
-    noaa_escala_azules <- RColorBrewer::brewer.pal(9, "PuBu")
-    noaa_escala_rojos <- RColorBrewer::brewer.pal(9, "YlOrBr")
+    # Definir paletas posibles según variable y tipo de probabilidad
+    escala_temp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                         tail(RColorBrewer::brewer.pal(7, "PuBu"), 6))
+    escala_temp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                         tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
+    escala_prcp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                         tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
+    escala_prcp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                         tail(RColorBrewer::brewer.pal(7, "YlGnBu"), 6))
     
     # Definir paleta de colores
     breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
-    paleta_below_20 <- if (base_file$variable == "prcp") noaa_escala_rojos else noaa_escala_azules
-    paleta_above_80 <- if (base_file$variable == "prcp") noaa_escala_azules else noaa_escala_rojos
+    paleta_below_20 <- if (base_file$variable == "prcp") escala_prcp_b20 else escala_temp_b20
+    paleta_above_80 <- if (base_file$variable == "prcp") escala_prcp_a80 else escala_temp_a80
     
     # Crear gráficos
     for ( lang in output_langs ) {
@@ -891,6 +904,7 @@ for ( i in indices ) {
           base_file$basename, "_prob_below_20_", lang, ".html"),
         breaks = breaks,
         colors = paleta_below_20, 
+        rev_legend = TRUE,
         dry_mask_df = dry_mask_trgt_months,
         save_map = TRUE)
     }
@@ -913,6 +927,7 @@ for ( i in indices ) {
           base_file$basename, "_prob_above_80_", lang, ".html"),
         breaks = breaks,
         colors = paleta_above_80, 
+        rev_legend = TRUE,
         dry_mask_df = dry_mask_trgt_months,
         save_map = TRUE)
     }
