@@ -589,7 +589,7 @@ PlotsHelper <- R6::R6Class(
       css_fix_2 <- 
         ".leaflet-top .leaflet-control {margin-top: 20px;}"
       css_title <- 
-        ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px;}"
+        ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px; line-height: 15px; margin-top: 17px !important;}"
       css_logos <- 
         ".logos {background: rgba(255, 255, 255, 0.5) !important;}"
       css_logo_climax <- 
@@ -731,9 +731,9 @@ PlotsHelper <- R6::R6Class(
       valid_for <- switch(lang, "en" = "Valid for", 
                           "es" = "Válido para",
                           "pt" = "Valido para")
-      issued <- switch(lang, "en" = "Issued", 
-                       "es" = "Emitido",
-                       "pt" = "Emitido")
+      issued <- switch(lang, "en" = "Issued on", 
+                       "es" = "Emitido en",
+                       "pt" = "Emitido o")
       calibrated <- switch(lang, "en" = "Calibrated model:", 
                            "es" = "Modelo calibrado:",
                            "pt" = "Modelo calibrado:")
@@ -746,44 +746,64 @@ PlotsHelper <- R6::R6Class(
         anomaly_desc <- switch(lang, "en" = "Anomaly forecast for", 
                                "es" = "Pronóstico de Anomalías para",
                                "pt" = "Previsão de Anomalia para")
-        main_title <- glue::glue("{anomaly_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        main_title <- glue::glue("{anomaly_desc} {tolower(variable_str)} ({variable_unit}). ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "corr") {
         correlation_desc <- switch(lang, "en" = "Correlation between Forecast and Observation", 
                                    "es" = "Correlación entre Pronóstico y Observación",
                                    "pt" = "Correlação entre Previsão e Observação")
-        main_title <- glue::glue("{correlation_desc} ({base_file$hcst_first_year}-{base_file$hcst_last_year})",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month}; {valid_for} {forecast_months_str}")
+        main_title <- glue::glue("{correlation_desc} ({base_file$hcst_first_year}-{base_file$hcst_last_year}). ",
+                                 "\n{valid_for} {forecast_months_str}. ",
+                                 "{issued} {initial_month}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "det.fcst") {
         det_fcst_desc <- switch(lang, "en" = "Deterministic forecast for", 
                                 "es" = "Pronóstico determinístico para",
                                 "pt" = "Previsão determinística para")
-        main_title <- glue::glue("{det_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        main_title <- glue::glue("{det_fcst_desc} {tolower(variable_str)} ({variable_unit}). ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "prob.fcst") {
         prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
-        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}, {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}. ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "uncal.fcst") {
         uncal_fcst_desc <- switch(lang, "en" = "Original Forecast for", 
                                   "es" = "Pronóstico original para",
                                   "pt" = "Previsão original para")
-        main_title <- glue::glue("{uncal_fcst_desc} {tolower(variable_str)} ({variable_unit}), {tolower(valid_for)} {month_year}",
-                                 "\n{uncalibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        main_title <- glue::glue("{uncal_fcst_desc} {tolower(variable_str)} ({variable_unit}). ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued}: {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "prob.below.20") {
-        prob_below_20_desc <- switch(lang, "en" = "Prob. event below 20% of the historical range", 
-                                     "es" = "Prob. evento por debajo del 20% del rango histórico",
-                                     "pt" = "Prob. evento abaixo de 20% da faixa histórica")
-        main_title <- glue::glue("{prob_below_20_desc} ({tolower(variable_str)}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
+                                 "es" = "Pronóstico probabilístico para",
+                                 "pt" = "Previsão probabilística para")
+        prob_below_20_desc <- switch(lang, "en" = "below 20th precentil of the historical distribution", 
+                                     "es" = "debajo del percentil 20 de la distribución histórica",
+                                     "pt" = "abaixo do percentil 20 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_below_20_desc}. ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } else if (data_type == "prob.above.80") {
-        prob_above_80_desc <- switch(lang, "en" = "Prob. event above 80% of the historical range", 
-                                     "es" = "Prob. evento por encima del 80% del rango histórico",
-                                     "pt" = "Prob. evento acima de 80% da faixa histórica")
-        main_title <- glue::glue("{prob_above_80_desc} ({tolower(variable_str)}), {tolower(valid_for)} {month_year}",
-                                 "\n{calibrated} {modelo}; {issued}: {initial_month} {initial_year}")
+        prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
+                                 "es" = "Pronóstico probabilístico para",
+                                 "pt" = "Previsão probabilística para")
+        prob_above_80_desc <- switch(lang, "en" = "above 80th precentil of the historical distribution", 
+                                     "es" = "encima del percentil 80 de la distribución histórica",
+                                     "pt" = "acima do percentil 80 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_above_80_desc}. ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
       } 
       
       # Retornar título real
