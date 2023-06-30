@@ -176,12 +176,12 @@ PlotsHelper <- R6::R6Class(
       no_data_txt_short <- switch(lang, "en" = "No data", 
                                   "es" = "Sin datos", 
                                   "pt" = "Sem dados")
-      masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
-                           "es" = "Enmascarada, Máscara Seca", 
-                           "pt" = "Mascarada, Máscara Seca")
-      masked_txt_short <- switch(lang, "en" = "Dry Mask", 
-                                 "es" = "Máscara Seca", 
-                                 "pt" = "Máscara Seca")
+      masked_txt <- switch(lang, "en" = "Masked, Dry Season", 
+                           "es" = "Enmascarada, Estación Seca", 
+                           "pt" = "Mascarada, Estação Seca")
+      masked_txt_short <- switch(lang, "en" = "Dry Season", 
+                                 "es" = "Estación Seca", 
+                                 "pt" = "Estação Seca")
       
       # Establecer breaks y color por defecto (siempre debe haber un color más que breaks)
       if ( is.null(breaks) && is.null(colors) ) {
@@ -365,12 +365,12 @@ PlotsHelper <- R6::R6Class(
       no_data_txt_short <- switch(lang, "en" = "No data", 
                                   "es" = "Sin datos", 
                                   "pt" = "Sem dados")
-      masked_txt <- switch(lang, "en" = "Masked, Dry Mask", 
-                           "es" = "Enmascarada, Máscara Seca", 
-                           "pt" = "Mascarada, Máscara Seca")
-      masked_txt_short <- switch(lang, "en" = "Dry Mask", 
-                                 "es" = "Máscara Seca", 
-                                 "pt" = "Máscara Seca")
+      masked_txt <- switch(lang, "en" = "Masked, Dry Season", 
+                           "es" = "Enmascarada, Estación Seca", 
+                           "pt" = "Mascarada, Estação Seca")
+      masked_txt_short <- switch(lang, "en" = "Dry Season", 
+                                 "es" = "Estación Seca", 
+                                 "pt" = "Estação Seca")
       txt_leg_lbl_below = switch(lang, "en" = "Prob. Below Normal", 
                                  "es" = "Prob. Inferior a lo Normal",
                                  "pt" = "Prob. Abaixo do normal")
