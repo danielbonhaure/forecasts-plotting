@@ -814,124 +814,131 @@ for ( i in indices ) {
 
     
     #
-    # Crear gráficos de probabilidades de eventos extremos para el SISSA
-    #  
+    # Crear gráficos de probabilidades de eventos extremos ubicados en el
+    # 20% inferior, o en el 20% superior, de la distribución histórica
+    #
     
-    if ( "sissa" %in% output_plots ) {
+    if ( "b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ) {
       
-    logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos Extremos SISSA  para el año: {data_year}"))
-    
-    # Definir df con los datos a graficar
-    prob_xtrm_df <- datos_entrada$pred_prob_xtrm_data$data %>%
-      dplyr::filter(
-        year == data_year) %>%
-      dplyr::rename(
-        prob_below_20 = paste0('prob_', base_file$variable, '_below'),
-        prob_a20_b80 = paste0('prob_', base_file$variable, '_normal'),
-        prob_above_80 = paste0('prob_', base_file$variable, '_above')) %>%
-      dplyr::select(
-        -init_time, -year, -month) %>%
-      exclude_points_outside_buffered_crcsas() %>%
-      { if ( global_config$get_config(base_file$type)$suavizar_graficos )
-        InterpolationHelper$interp_kriging(
-          data_df = ., 
-          cols_to_interp = c("prob_below_20", "prob_a20_b80", "prob_above_80"), 
-          new_grid_sf = new_grid_sf,
-          dependent_col = 'prob_a20_b80')
-        else . } %>%
-      exclude_points_outside_crcsas() %>%
-      FcstProbabilisticData$add_categories(
-        prob_data_df = ., 
-        below_col = "prob_below_20", 
-        normal_col = "prob_a20_b80", 
-        above_col = "prob_above_80",
-        cat_below = "below-20",
-        cat_normal = "a20-b80",
-        cat_above = "above-80") 
-    
-    # La interpolación puede hacer que haya puntos por sobre la línea de
-    # los -10 grados de latitude, estas deben ser exluídas del gráfico.
-    prob_xtrm_df <- prob_xtrm_df %>%
-      dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
-    
-    # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
-    prob_xtrm_df <- prob_xtrm_df %>%
-      { if ( base_file$obs_data_source == "chirps" )
-        dplyr::mutate(.,
-                      prob_below = ifelse(latitude < -46, NA_integer_, prob_below),
-                      prob_normal = ifelse(latitude < -46, NA_integer_, prob_normal),
-                      prob_above = ifelse(latitude < -46, NA_integer_, prob_above),
-                      category = ifelse(latitude < -46, NA_integer_, as.character(category)))
-        else . }
-    
-    # Aplicar unname a todas las columnas porque las columnas de 
-    # tipo named causan errores el graficar.
-    prob_xtrm_df <- prob_xtrm_df %>% 
-      dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
-    
-    # Definir paletas posibles según variable y tipo de probabilidad
-    escala_temp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
-                         tail(RColorBrewer::brewer.pal(7, "PuBu"), 6))
-    escala_temp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
-                         tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
-    escala_prcp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
-                         tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
-    escala_prcp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
-                         tail(RColorBrewer::brewer.pal(7, "YlGnBu"), 6))
-    
-    # Definir paleta de colores
-    breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
-    paleta_below_20 <- if (base_file$variable == "prcp") escala_prcp_b20 else escala_temp_b20
-    paleta_above_80 <- if (base_file$variable == "prcp") escala_prcp_a80 else escala_temp_a80
-    
-    # Crear gráficos
-    for ( lang in output_langs ) {
-      prob_xtrm_plot_below_20 <- PlotsHelper$graficar_mapa(
-        data_df = prob_xtrm_df %>% 
-          dplyr::select(longitude, latitude, value = prob_below_20) %>%
-          dplyr::mutate(value = value * 100), 
-        gridded_data = xtrm_gridded_data,
-        main_title = PlotsHelper$definir_titulo("prob.below.20", base_file, lang, data_year), 
-        legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.20", base_file, lang), 
-        data_type = base_file$type, lang = lang,
-        spatial_domain = list(
-          nla = max(prob_xtrm_df$latitude),
-          sla = min(prob_xtrm_df$latitude),
-          wlo = min(prob_xtrm_df$longitude),
-          elo = max(prob_xtrm_df$longitude)), 
-        output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder$sissa, "/", 
-          base_file$basename, "_prob_below_20_", lang, ".html"),
-        breaks = breaks,
-        colors = paleta_below_20, 
-        rev_legend = TRUE,
-        dry_mask_df = dry_mask_trgt_months,
-        save_map = TRUE)
-    }
-    for ( lang in output_langs ) {
-      prob_xtrm_plot_above_80 <- PlotsHelper$graficar_mapa(
-        data_df = prob_xtrm_df %>% 
-          dplyr::select(longitude, latitude, value = prob_above_80) %>%
-          dplyr::mutate(value = value * 100), 
-        gridded_data = xtrm_gridded_data,
-        main_title = PlotsHelper$definir_titulo("prob.above.80", base_file, lang, data_year), 
-        legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.80", base_file, lang), 
-        data_type = base_file$type, lang = lang,
-        spatial_domain = list(
-          nla = max(prob_xtrm_df$latitude),
-          sla = min(prob_xtrm_df$latitude),
-          wlo = min(prob_xtrm_df$longitude),
-          elo = max(prob_xtrm_df$longitude)), 
-        output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder$sissa, "/", 
-          base_file$basename, "_prob_above_80_", lang, ".html"),
-        breaks = breaks,
-        colors = paleta_above_80, 
-        rev_legend = TRUE,
-        dry_mask_df = dry_mask_trgt_months,
-        save_map = TRUE)
-    }
-    }  # fin del if que genera gráficos probabilísticos SISSA
+      logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos ",
+                                  "de Eventos Extremos para el año: {data_year}"))
+      
+      # Definir df con los datos a graficar
+      prob_xtrm_df <- datos_entrada$pred_prob_xtrm_data$data %>%
+        dplyr::filter(
+          year == data_year) %>%
+        dplyr::rename(
+          prob_below_20 = paste0('prob_', base_file$variable, '_below'),
+          prob_a20_b80 = paste0('prob_', base_file$variable, '_normal'),
+          prob_above_80 = paste0('prob_', base_file$variable, '_above')) %>%
+        dplyr::select(
+          -init_time, -year, -month) %>%
+        exclude_points_outside_buffered_crcsas() %>%
+        { if ( global_config$get_config(base_file$type)$suavizar_graficos )
+          InterpolationHelper$interp_kriging(
+            data_df = ., 
+            cols_to_interp = c("prob_below_20", "prob_a20_b80", "prob_above_80"), 
+            new_grid_sf = new_grid_sf,
+            dependent_col = 'prob_a20_b80')
+          else . } %>%
+        exclude_points_outside_crcsas() %>%
+        FcstProbabilisticData$add_categories(
+          prob_data_df = ., 
+          below_col = "prob_below_20", 
+          normal_col = "prob_a20_b80", 
+          above_col = "prob_above_80",
+          cat_below = "below-20",
+          cat_normal = "a20-b80",
+          cat_above = "above-80") 
+      
+      # La interpolación puede hacer que haya puntos por sobre la línea de
+      # los -10 grados de latitude, estas deben ser exluídas del gráfico.
+      prob_xtrm_df <- prob_xtrm_df %>%
+        dplyr::filter(latitude <= global_config$get_config('spatial_domain')$nla)
+      
+      # Los datos CHIRPS, por debajo de -49 no deben ser utilizados
+      prob_xtrm_df <- prob_xtrm_df %>%
+        { if ( base_file$obs_data_source == "chirps" )
+          dplyr::mutate(.,
+                        prob_below = ifelse(latitude < -46, NA_integer_, prob_below),
+                        prob_normal = ifelse(latitude < -46, NA_integer_, prob_normal),
+                        prob_above = ifelse(latitude < -46, NA_integer_, prob_above),
+                        category = ifelse(latitude < -46, NA_integer_, as.character(category)))
+          else . }
+      
+      # Aplicar unname a todas las columnas porque las columnas de 
+      # tipo named causan errores el graficar.
+      prob_xtrm_df <- prob_xtrm_df %>% 
+        dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
+      
+      # Definir paletas posibles según variable y tipo de probabilidad
+      escala_temp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "PuBu"), 6))
+      escala_temp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
+      escala_prcp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
+      escala_prcp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "YlGnBu"), 6))
+      
+      # Definir paleta de colores
+      breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
+      paleta_below_20 <- if (base_file$variable == "prcp") escala_prcp_b20 else escala_temp_b20
+      paleta_above_80 <- if (base_file$variable == "prcp") escala_prcp_a80 else escala_temp_a80
+      
+      # Crear gráficos
+      if ( "b20.fcst" %in% output_plots ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_plot_below_20 <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_below_20) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.below.20", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.20", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_below_20_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_below_20, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            save_map = TRUE)
+        }
+      }
+      if ( "a80.fcst" %in% output_plots ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_plot_above_80 <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_above_80) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.above.80", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.80", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_above_80_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_above_80, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            save_map = TRUE)
+        }
+      }
+      
+    }  # fin del if que  genera gráficos de probabilidades de eventos extremos
     
     
   }  # FIN DEL FOR: for (data_year in anhos_pronosticados)
