@@ -654,7 +654,8 @@ for ( i in indices ) {
     # Crear gráfico de valores probabilísticos pronosticados
     #
     
-    if ( "prob.fcst" %in% output_plots ) {
+    if ( "prob.fcst" %in% output_plots || 
+         "b33.fcst" %in% output_plots || "a66.fcst" %in% output_plots) {
     
     logger::log_info(glue::glue("Inicia el graficado del Pronóstico Probabilístico para el año: {data_year}"))
     
@@ -710,8 +711,8 @@ for ( i in indices ) {
     noaa_escala_verdes <- tail(RColorBrewer::brewer.pal(9, "BuGn"), 7)
     noaa_escala_marrones <- tail(RColorBrewer::brewer.pal(9, "YlOrBr"), 7)
     
-    # Definir paleta de colores
-    breaks <- c(0.33, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1)
+    # Definir paleta de colores para "prob.fcst"
+    breaks_prob_fcst <- c(0.33, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1)
     if (base_file$variable == "prcp") {
       paleta_below <- noaa_escala_marrones
       paleta_above <- noaa_escala_verdes
@@ -722,27 +723,96 @@ for ( i in indices ) {
     paleta_normal <- tail(RColorBrewer::brewer.pal(9, 'Greys'), 7)
     
     # Crear gráfico
-    for ( lang in output_langs ) {
-      prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
-        data_df = prob_fcst_df, 
-        gridded_data = prob_gridded_data,
-        main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
-        legend_title = PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
-        data_type = base_file$type, lang = lang,
-        spatial_domain = list(
-          nla = max(prob_fcst_df$latitude),
-          sla = min(prob_fcst_df$latitude),
-          wlo = min(prob_fcst_df$longitude),
-          elo = max(prob_fcst_df$longitude)), 
-        output_file_abspath = paste0(
-          global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
-          base_file$basename, "_prob_fcst_", lang, ".html"),
-        breaks = breaks,
-        colors_below = paleta_below, 
-        colors_normal = paleta_normal, 
-        colors_above = paleta_above, 
-        dry_mask_df = dry_mask_trgt_months,
-        save_map = TRUE)
+    if ( "prob.fcst" %in% output_plots ) {
+      for ( lang in output_langs ) {
+        prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
+          data_df = prob_fcst_df, 
+          gridded_data = prob_gridded_data,
+          main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
+          data_type = base_file$type, lang = lang,
+          spatial_domain = list(
+            nla = max(prob_fcst_df$latitude),
+            sla = min(prob_fcst_df$latitude),
+            wlo = min(prob_fcst_df$longitude),
+            elo = max(prob_fcst_df$longitude)), 
+          output_file_abspath = paste0(
+            global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
+            base_file$basename, "_prob_fcst_", lang, ".html"),
+          breaks = breaks_prob_fcst,
+          colors_below = paleta_below, 
+          colors_normal = paleta_normal, 
+          colors_above = paleta_above, 
+          dry_mask_df = dry_mask_trgt_months,
+          save_map = TRUE)
+      }
+    }
+    
+    # Definir paletas posibles según variable y tipo de probabilidad
+    escala_temp_b33 <- c('#FFFFFF',
+                         tail(RColorBrewer::brewer.pal(8, "PuBu"), 7))
+    escala_temp_a66 <- c('#FFFFFF',
+                         tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7))
+    escala_prcp_b33 <- c('#FFFFFF',
+                         tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7))
+    escala_prcp_a66 <- c('#FFFFFF',
+                         tail(RColorBrewer::brewer.pal(8, "YlGnBu"), 7))
+    
+    # Definir paleta de colores para "b33.fcst" y "a66.fcst"
+    breaks_prob_xtrm <- c(33, 40, 50, 60, 70, 80, 90)
+    paleta_below_33 <- if (base_file$variable == "prcp") escala_prcp_b33 else escala_temp_b33
+    paleta_above_66 <- if (base_file$variable == "prcp") escala_prcp_a66 else escala_temp_a66
+    
+    # Crear gráfico
+    if ( "b33.fcst" %in% output_plots ) {
+      for ( lang in output_langs ) {
+        prob_xtrm_plot_below_33 <- PlotsHelper$graficar_mapa(
+          data_df = prob_fcst_df %>% 
+            dplyr::select(longitude, latitude, value = prob_below) %>%
+            dplyr::mutate(value = value * 100), 
+          gridded_data = xtrm_gridded_data,
+          main_title = PlotsHelper$definir_titulo("prob.below.33", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.33", base_file, lang), 
+          data_type = base_file$type, lang = lang,
+          spatial_domain = list(
+            nla = max(prob_fcst_df$latitude),
+            sla = min(prob_fcst_df$latitude),
+            wlo = min(prob_fcst_df$longitude),
+            elo = max(prob_fcst_df$longitude)), 
+          output_file_abspath = paste0(
+            global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
+            base_file$basename, "_prob_below_33_", lang, ".html"),
+          breaks = breaks_prob_xtrm,
+          colors = paleta_below_33, 
+          rev_legend = TRUE,
+          dry_mask_df = dry_mask_trgt_months,
+          save_map = TRUE)
+      }
+    }
+    if ( "a66.fcst" %in% output_plots ) {
+      for ( lang in output_langs ) {
+        prob_xtrm_plot_above_66 <- PlotsHelper$graficar_mapa(
+          data_df = prob_fcst_df %>% 
+            dplyr::select(longitude, latitude, value = prob_above) %>%
+            dplyr::mutate(value = value * 100), 
+          gridded_data = xtrm_gridded_data,
+          main_title = PlotsHelper$definir_titulo("prob.above.66", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.66", base_file, lang), 
+          data_type = base_file$type, lang = lang,
+          spatial_domain = list(
+            nla = max(prob_fcst_df$latitude),
+            sla = min(prob_fcst_df$latitude),
+            wlo = min(prob_fcst_df$longitude),
+            elo = max(prob_fcst_df$longitude)), 
+          output_file_abspath = paste0(
+            global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
+            base_file$basename, "_prob_above_66_", lang, ".html"),
+          breaks = breaks_prob_xtrm,
+          colors = paleta_above_66, 
+          rev_legend = TRUE,
+          dry_mask_df = dry_mask_trgt_months,
+          save_map = TRUE)
+      }
     }
     
     }  # fin del if que genera gráficos probabilísticos
@@ -818,7 +888,8 @@ for ( i in indices ) {
     # 20% inferior, o en el 20% superior, de la distribución histórica
     #
     
-    if ( "b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ) {
+    if ( "b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ||
+         "dry.fcst" %in% output_plots || "hot.fcst" %in% output_plots ) {
       
       logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos ",
                                   "de Eventos Extremos para el año: {data_year}"))
@@ -872,13 +943,13 @@ for ( i in indices ) {
         dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
       
       # Definir paletas posibles según variable y tipo de probabilidad
-      escala_temp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+      escala_temp_b20 <- c('#BBBBBB', rep('#FFFFFF', 2),
                            tail(RColorBrewer::brewer.pal(7, "PuBu"), 6))
-      escala_temp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+      escala_temp_a80 <- c('#BBBBBB', rep('#FFFFFF', 2),
                            tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
-      escala_prcp_b20 <- c('#DDDDDD', rep('#FFFFFF', 2),
+      escala_prcp_b20 <- c('#BBBBBB', rep('#FFFFFF', 2),
                            tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
-      escala_prcp_a80 <- c('#DDDDDD', rep('#FFFFFF', 2),
+      escala_prcp_a80 <- c('#BBBBBB', rep('#FFFFFF', 2),
                            tail(RColorBrewer::brewer.pal(7, "YlGnBu"), 6))
       
       # Definir paleta de colores
@@ -903,8 +974,33 @@ for ( i in indices ) {
               wlo = min(prob_xtrm_df$longitude),
               elo = max(prob_xtrm_df$longitude)), 
             output_file_abspath = paste0(
-              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
               base_file$basename, "_prob_below_20_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_below_20, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            save_map = TRUE)
+        }
+      }
+      if ( "dry.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_dry_plot <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_below_20) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.xtrm.dry", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.dry", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_xtrm_dry_", lang, ".html"),
             breaks = breaks,
             colors = paleta_below_20, 
             rev_legend = TRUE,
@@ -928,8 +1024,33 @@ for ( i in indices ) {
               wlo = min(prob_xtrm_df$longitude),
               elo = max(prob_xtrm_df$longitude)), 
             output_file_abspath = paste0(
-              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
               base_file$basename, "_prob_above_80_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_above_80, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            save_map = TRUE)
+        }
+      }
+      if ( "hot.fcst" %in% output_plots && base_file$variable == 't2m' ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_hot_plot <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_above_80) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.xtrm.hot", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.hot", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_xtrm_hot_", lang, ".html"),
             breaks = breaks,
             colors = paleta_above_80, 
             rev_legend = TRUE,
