@@ -371,15 +371,15 @@ PlotsHelper <- R6::R6Class(
       masked_txt_short <- switch(lang, "en" = "Dry Season", 
                                  "es" = "Estación Seca", 
                                  "pt" = "Estação Seca")
-      txt_leg_lbl_below = switch(lang, "en" = "Prob. Below Normal", 
-                                 "es" = "Prob. Inferior a lo Normal",
-                                 "pt" = "Prob. Abaixo do normal")
-      txt_leg_lbl_normal = switch(lang, "en" = "Prob. Normal", 
-                                  "es" = "Prob. Normal",
-                                  "pt" = "Prob. Normal")
-      txt_leg_lbl_above = switch(lang, "en" = "Prob. Above Normal", 
-                                 "es" = "Prob. Superior a lo Normal",
-                                 "pt" = "Prob. Acima do Normal")
+      txt_leg_lbl_below = switch(lang, "en" = "Prob. \"Below Normal\" (%)", 
+                                 "es" = "Prob. \"Inferior a lo Normal\" (%)",
+                                 "pt" = "Prob. \"Abaixo do Normal\" (%)")
+      txt_leg_lbl_normal = switch(lang, "en" = "Prob. \"Normal\" (%)", 
+                                  "es" = "Prob. \"Normal\" (%)",
+                                  "pt" = "Prob. \"Normal\" (%)")
+      txt_leg_lbl_above = switch(lang, "en" = "Prob. \"Above Normal\" (%)", 
+                                 "es" = "Prob. \"Superior a lo Normal\" (%)",
+                                 "pt" = "Prob. \"Acima do Normal\" (%)")
         
       # Determinar el color de cada celda
       data_df <- data_df %>%
@@ -503,15 +503,15 @@ PlotsHelper <- R6::R6Class(
           labels = c(glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_below} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "</i>")),
                      glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_normal} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "</i>")),
                      glue::glue("<b style='margin-left:-20px'> {txt_leg_lbl_above} </b>"), "",
                      purrr::map_chr(
                        .x = breaks, 
-                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "%", "</i>")),
+                       .f = ~ paste0("<i style='opacity: .9; margin-top: -9px;'>", .x*100, "</i>")),
                      purrr::map_chr(
                        .x = if (!is.null(dry_mask_df)) c(no_data_txt_short, masked_txt_short) else no_data_txt_short, 
                        .f = ~ paste0("<i style='opacity: .9; white-space: nowrap; width: fit-content;'>", .x, "</i>"))),
@@ -734,9 +734,15 @@ PlotsHelper <- R6::R6Class(
       issued <- switch(lang, "en" = "Issued on", 
                        "es" = "Emitido en",
                        "pt" = "Emitido o")
+      issued_prob_xtrm <- switch(lang, "en" = "Forecast issued in", 
+                                 "es" = "Pronóstico emitido en",
+                                 "pt" = "Previsão divulgada em")
       calibrated <- switch(lang, "en" = "Calibrated model:", 
                            "es" = "Modelo calibrado:",
                            "pt" = "Modelo calibrado:")
+      calibrated_prob_xtrm <- switch(lang, "en" = "Calibration of NMME model predictions", 
+                                     "es" = "Calibración de predicciones del NMME",
+                                     "pt" = "Calibração das previsões do NMME")
       uncalibrated <- switch(lang, "en" = "Uncalibrated model", 
                              "es" = "Modelo sin calibrar",
                              "pt" = "Modelo sem calibrar")
@@ -767,10 +773,32 @@ PlotsHelper <- R6::R6Class(
                                  "{issued} {initial_month} {initial_year}. ",
                                  "\n{calibrated} {modelo}.")
       } else if (data_type == "prob.fcst") {
+        prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for the most probable category of", 
+                                 "es" = "Pronóstico probabilístico para la categoría más probable de",
+                                 "pt" = "Previsão probabilística para a categoria mais provável de")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}. ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
+      } else if (data_type == "prob.below.33") {
         prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
-        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)}. ",
+        prob_below_20_desc <- switch(lang, "en" = "below 20th precentil of the historical distribution", 
+                                     "es" = "inferior al percentil 20 de la distribución histórica",
+                                     "pt" = "abaixo do percentil 20 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_below_20_desc}. ",
+                                 "\n{valid_for} {month_year}. ",
+                                 "{issued} {initial_month} {initial_year}. ",
+                                 "\n{calibrated} {modelo}.")
+      } else if (data_type == "prob.above.66") {
+        prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
+                                 "es" = "Pronóstico probabilístico para",
+                                 "pt" = "Previsão probabilística para")
+        prob_above_80_desc <- switch(lang, "en" = "above 80th precentil of the historical distribution", 
+                                     "es" = "superior al percentil 80 de la distribución histórica",
+                                     "pt" = "acima do percentil 80 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_above_80_desc}. ",
                                  "\n{valid_for} {month_year}. ",
                                  "{issued} {initial_month} {initial_year}. ",
                                  "\n{calibrated} {modelo}.")
@@ -787,7 +815,7 @@ PlotsHelper <- R6::R6Class(
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
         prob_below_20_desc <- switch(lang, "en" = "below 20th precentil of the historical distribution", 
-                                     "es" = "debajo del percentil 20 de la distribución histórica",
+                                     "es" = "inferior al percentil 20 de la distribución histórica",
                                      "pt" = "abaixo do percentil 20 da distribuição histórica")
         main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_below_20_desc}. ",
                                  "\n{valid_for} {month_year}. ",
@@ -798,12 +826,26 @@ PlotsHelper <- R6::R6Class(
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
         prob_above_80_desc <- switch(lang, "en" = "above 80th precentil of the historical distribution", 
-                                     "es" = "encima del percentil 80 de la distribución histórica",
+                                     "es" = "superior al percentil 80 de la distribución histórica",
                                      "pt" = "acima do percentil 80 da distribuição histórica")
         main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_above_80_desc}. ",
                                  "\n{valid_for} {month_year}. ",
                                  "{issued} {initial_month} {initial_year}. ",
                                  "\n{calibrated} {modelo}.")
+      } else if (data_type == "prob.xtrm.dry") {
+        prob_fcst_desc <- switch(lang, "en" = "Probability of extremely dry conditions", 
+                                 "es" = "Probabilidad de condiciones extremadamente secas",
+                                 "pt" = "Possibilidade de condições extremamente secas")
+        main_title <- glue::glue("{prob_fcst_desc}. ",
+                                 "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
+                                 "\n{calibrated_prob_xtrm}.")
+      } else if (data_type == "prob.xtrm.hot") {
+        prob_fcst_desc <- switch(lang, "en" = "Probability of extremely hot conditions", 
+                                 "es" = "Probabilidad de condiciones extremadamente cálidas",
+                                 "pt" = "Possibilidade de condições extremamente quentes")
+        main_title <- glue::glue("{prob_fcst_desc}. ",
+                                 "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
+                                 "\n{calibrated_prob_xtrm}.")
       } 
       
       # Retornar título real
@@ -840,12 +882,20 @@ PlotsHelper <- R6::R6Class(
         legend_title <- glue::glue("{variable_str} ({variable_unit})")
       } else if (data_type == "prob.fcst") {
         legend_title <- glue::glue("")
+      } else if (data_type == "prob.below.33") {
+        legend_title <- glue::glue("{variable_str} (%)")
+      } else if (data_type == "prob.above.66") {
+        legend_title <- glue::glue("{variable_str} (%)")
       } else if (data_type == "uncal.fcst") {
         legend_title <- glue::glue("{variable_str} ({variable_unit})")
       } else if (data_type == "prob.below.20") {
-        legend_title <- glue::glue("{variable_str} <20 (%)")
-      }else if (data_type == "prob.above.80") {
-        legend_title <- glue::glue("{variable_str} >80 (%)")
+        legend_title <- glue::glue("{variable_str} (%)")
+      } else if (data_type == "prob.above.80") {
+        legend_title <- glue::glue("{variable_str} (%)")
+      } else if (data_type == "prob.xtrm.dry") {
+        legend_title <- glue::glue("{variable_str} (%)")
+      } else if (data_type == "prob.xtrm.hot") {
+        legend_title <- glue::glue("{variable_str} (%)")
       }
       
       # Retornar título real
