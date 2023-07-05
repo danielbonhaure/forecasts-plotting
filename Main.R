@@ -748,18 +748,22 @@ for ( i in indices ) {
       }
     }
     
+    # Definir paleta de colores de la NOAA
+    # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
+    # Ver: https://www.cpc.ncep.noaa.gov/products/predictions/multi_season/13_seasonal_outlooks/color/churchill.php
+    noaa_escala_azules <- tail(RColorBrewer::brewer.pal(8, "PuBu"), 7)
+    noaa_escala_rojos <- tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7)
+    noaa_escala_marrones <- tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7)
+    noaa_escala_verdes <- tail(RColorBrewer::brewer.pal(8, "BuGn"), 7)
+    
     # Definir paletas posibles según variable y tipo de probabilidad
-    escala_temp_b33 <- c('#FFFFFF',
-                         tail(RColorBrewer::brewer.pal(8, "PuBu"), 7))
-    escala_temp_a66 <- c('#FFFFFF',
-                         tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7))
-    escala_prcp_b33 <- c('#FFFFFF',
-                         tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7))
-    escala_prcp_a66 <- c('#FFFFFF',
-                         tail(RColorBrewer::brewer.pal(8, "YlGnBu"), 7))
+    escala_temp_b33 <- c('#FFFFFF', noaa_escala_azules)
+    escala_temp_a66 <- c('#FFFFFF', noaa_escala_rojos)
+    escala_prcp_b33 <- c('#FFFFFF', noaa_escala_marrones)
+    escala_prcp_a66 <- c('#FFFFFF', noaa_escala_verdes)
     
     # Definir paleta de colores para "b33.fcst" y "a66.fcst"
-    breaks_prob_xtrm <- c(33, 40, 50, 60, 70, 80, 90)
+    breaks_prob_xtrm <- c(33, 40, 50, 60, 70, 80, 90, 100)
     paleta_below_33 <- if (base_file$variable == "prcp") escala_prcp_b33 else escala_temp_b33
     paleta_above_66 <- if (base_file$variable == "prcp") escala_prcp_a66 else escala_temp_a66
     
@@ -786,6 +790,7 @@ for ( i in indices ) {
           colors = paleta_below_33, 
           rev_legend = TRUE,
           dry_mask_df = dry_mask_trgt_months,
+          include_first = TRUE,
           save_map = TRUE)
       }
     }
@@ -811,6 +816,7 @@ for ( i in indices ) {
           colors = paleta_above_66, 
           rev_legend = TRUE,
           dry_mask_df = dry_mask_trgt_months,
+          include_first = TRUE,
           save_map = TRUE)
       }
     }
@@ -942,18 +948,22 @@ for ( i in indices ) {
       prob_xtrm_df <- prob_xtrm_df %>% 
         dplyr::mutate(dplyr::across(dplyr::everything(), ~ unname(.x)))
       
+      # Definir paleta de colores de la NOAA
+      # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
+      # Ver: https://www.cpc.ncep.noaa.gov/products/predictions/multi_season/13_seasonal_outlooks/color/churchill.php
+      noaa_escala_azules <- tail(RColorBrewer::brewer.pal(8, "PuBu"), 7)
+      noaa_escala_rojos <- tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7)
+      noaa_escala_marrones <- tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7)
+      noaa_escala_verdes <- tail(RColorBrewer::brewer.pal(8, "BuGn"), 7)
+      
       # Definir paletas posibles según variable y tipo de probabilidad
-      escala_temp_b20 <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "PuBu"), 6))
-      escala_temp_a80 <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
-      escala_prcp_b20 <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
-      escala_prcp_a80 <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "YlGnBu"), 6))
+      escala_temp_b20 <- c('#FFFFFF', noaa_escala_azules)
+      escala_temp_a80 <- c('#FFFFFF', noaa_escala_rojos)
+      escala_prcp_b20 <- c('#FFFFFF', noaa_escala_marrones)
+      escala_prcp_a80 <- c('#FFFFFF', noaa_escala_verdes)
       
       # Definir paleta de colores
-      breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
+      breaks <- c(30, 40, 50, 60, 70, 80, 90, 100)
       paleta_below_20 <- if (base_file$variable == "prcp") escala_prcp_b20 else escala_temp_b20
       paleta_above_80 <- if (base_file$variable == "prcp") escala_prcp_a80 else escala_temp_a80
       
@@ -980,31 +990,7 @@ for ( i in indices ) {
             colors = paleta_below_20, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
-            save_map = TRUE)
-        }
-      }
-      if ( "dry.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
-        for ( lang in output_langs ) {
-          prob_xtrm_dry_plot <- PlotsHelper$graficar_mapa(
-            data_df = prob_xtrm_df %>% 
-              dplyr::select(longitude, latitude, value = prob_below_20) %>%
-              dplyr::mutate(value = value * 100), 
-            gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.xtrm.dry", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.dry", base_file, lang), 
-            data_type = base_file$type, lang = lang,
-            spatial_domain = list(
-              nla = max(prob_xtrm_df$latitude),
-              sla = min(prob_xtrm_df$latitude),
-              wlo = min(prob_xtrm_df$longitude),
-              elo = max(prob_xtrm_df$longitude)), 
-            output_file_abspath = paste0(
-              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
-              base_file$basename, "_prob_xtrm_dry_", lang, ".html"),
-            breaks = breaks,
-            colors = paleta_below_20, 
-            rev_legend = TRUE,
-            dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
             save_map = TRUE)
         }
       }
@@ -1030,6 +1016,41 @@ for ( i in indices ) {
             colors = paleta_above_80, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
+            save_map = TRUE)
+        }
+      }
+      
+      # Definir paleta de colores
+      breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
+      paleta_prcp_dry <- c('#BBBBBB', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
+      paleta_temp_hot <- c('#BBBBBB', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
+      
+      # Crear gráficos
+      if ( "dry.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_dry_plot <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_below_20) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.xtrm.dry", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.dry", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_xtrm_dry_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_prcp_dry, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
             save_map = TRUE)
         }
       }
@@ -1052,7 +1073,7 @@ for ( i in indices ) {
               global_config$get_config(base_file$type)$output_folder$sissa, "/", 
               base_file$basename, "_prob_xtrm_hot_", lang, ".html"),
             breaks = breaks,
-            colors = paleta_above_80, 
+            colors = paleta_temp_hot, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
             save_map = TRUE)

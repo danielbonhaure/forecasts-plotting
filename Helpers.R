@@ -167,6 +167,7 @@ PlotsHelper <- R6::R6Class(
                              main_title, legend_title, data_type, lang,
                              output_file_abspath, dry_mask_df,
                              breaks = NULL, colors = NULL, rev_legend = FALSE,
+                             include_first = FALSE, include_last = FALSE, 
                              save_map = TRUE) {
       
       # Definir texto a ser utilizados
@@ -198,10 +199,15 @@ PlotsHelper <- R6::R6Class(
       }
       
       # Determinar el color de cada celda
+      breaks_aux <- breaks
+      if (include_first)
+        breaks_aux <- breaks_aux[-1]
+      if (include_last)
+        breaks_aux <- breaks_aux[-length(breaks_aux)]
       data_df <- data_df %>%
         dplyr::mutate(
           c_color = purrr::map_chr(
-            value, ~ get_value_color(.x, breaks, colors, na_color)),
+            value, ~ get_value_color(.x, breaks_aux, colors, na_color)),
           label_msg = dplyr::case_when(
             is.na(value) ~ no_data_txt,
             TRUE ~ as.character(auto_round(value)) ) )
@@ -232,6 +238,12 @@ PlotsHelper <- R6::R6Class(
         colors <- rev(colors)
         breaks <- rev(breaks)
       }
+      
+      # Modificar colores según sea necesario
+      if (include_first)
+        colors <- c("rgba(255, 255, 255, 0)", colors)
+      if (include_last)
+        colors <- c(colors, "rgba(255, 255, 255, 0)")
 
       # Crear mapa con leaflet
       m <- leaflet::leaflet() %>%
@@ -304,7 +316,7 @@ PlotsHelper <- R6::R6Class(
               .x = if (!is.null(dry_mask_df)) c(no_data_txt_short, masked_txt_short) else no_data_txt_short, 
               .f = ~ paste0("<i style='opacity: .9; white-space: nowrap; width: fit-content;'>", .x, "</i>"))),
           title = htmltools::HTML(legend_title),
-          className = "info legend principal",
+          className = if (include_first) "info legend principal include-first" else "info legend principal",
           opacity = 0.9) %>%
         leaflet::addControl(
           html = htmltools::tags$div(
@@ -588,6 +600,8 @@ PlotsHelper <- R6::R6Class(
         ".info.legend.principal {background: rgba(255, 255, 255, 0.5) !important; width: fit-content;}"
       css_fix_2 <- 
         ".leaflet-top .leaflet-control {margin-top: 20px;}"
+      css_fix_3 <- 
+        ".info.legend.principal.include-first div {margin-bottom: -7px !important;}"
       css_title <- 
         ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px; line-height: 15px; margin-top: 17px !important;}"
       css_logos <- 
@@ -608,7 +622,7 @@ PlotsHelper <- R6::R6Class(
         ".fa-eye-slash {margin-bottom: -2px; width: 19px; height: 19px; background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'%3E%3Cpath d='M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z'/%3E%3C/svg%3E\");}"
       # Convert CSS to HTML
       html_fix <- htmltools::tags$style(
-        type = "text/css", paste(css_fix_1, css_fix_2, css_title, css_logos,
+        type = "text/css", paste(css_fix_1, css_fix_2, css_fix_3, css_title, css_logos,
                                  css_logo_climax, css_logo_cima, css_logo_smn, css_logo_crcsas,
                                  css_hide_button, css_fa_eye, css_fa_eye_slash))
     },
