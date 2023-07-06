@@ -201,9 +201,9 @@ PlotsHelper <- R6::R6Class(
       # Determinar el color de cada celda
       breaks_aux <- breaks
       if (include_first)
-        breaks_aux <- breaks_aux[-1]
+        breaks_aux <- breaks_aux[-(if (rev_legend) length(breaks_aux) else 1)]
       if (include_last)
-        breaks_aux <- breaks_aux[-length(breaks_aux)]
+        breaks_aux <- breaks_aux[-(if (rev_legend) 1 else length(breaks_aux))]
       data_df <- data_df %>%
         dplyr::mutate(
           c_color = purrr::map_chr(
@@ -878,6 +878,10 @@ PlotsHelper <- R6::R6Class(
                                     "pt" = "Temperatura 2m"))
       variable_unit <- ifelse(variable == 'prcp', 'mm', '°C')
       
+      probabilidad <- switch(lang, "en" = "Probability", 
+                             "es" = "Probabilidad", 
+                             "pt" = "Probabilidade")
+      
       # Definir título por defecto
       legend_title <- switch(lang, "en" = "", "es" = "", "pt" = "")
       
@@ -897,19 +901,19 @@ PlotsHelper <- R6::R6Class(
       } else if (data_type == "prob.fcst") {
         legend_title <- glue::glue("")
       } else if (data_type == "prob.below.33") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.above.66") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "uncal.fcst") {
         legend_title <- glue::glue("{variable_str} ({variable_unit})")
       } else if (data_type == "prob.below.20") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.above.80") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.xtrm.dry") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.xtrm.hot") {
-        legend_title <- glue::glue("{variable_str} (%)")
+        legend_title <- glue::glue("{probabilidad} (%)")
       }
       
       # Retornar título real

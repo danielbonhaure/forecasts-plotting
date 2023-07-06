@@ -1022,11 +1022,11 @@ for ( i in indices ) {
       }
       
       # Definir paleta de colores
-      breaks <- c(10, 20, 30, 40, 50, 60, 70, 80)
-      paleta_prcp_dry <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "YlOrBr"), 6))
-      paleta_temp_hot <- c('#BBBBBB', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(7, "YlOrRd"), 6))
+      breaks <- c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+      paleta_prcp_dry <- c('#FFFFFF', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7))
+      paleta_temp_hot <- c('#FFFFFF', rep('#FFFFFF', 2),
+                           tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7))
       
       # Crear gráficos
       if ( "dry.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
@@ -1051,6 +1051,7 @@ for ( i in indices ) {
             colors = paleta_prcp_dry, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
             save_map = TRUE)
         }
       }
@@ -1076,6 +1077,7 @@ for ( i in indices ) {
             colors = paleta_temp_hot, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
             save_map = TRUE)
         }
       }
