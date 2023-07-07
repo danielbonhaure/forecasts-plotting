@@ -24,10 +24,10 @@ images:
 output_langs: ["en", "es", "pt"]
 # output_plots: ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst", 
 #                "b20.fcst", "b33.fcst", "a66.fcst", "a80.fcst", 
-#                "dry.fcst", "hot.fcst"]
+#                "dry.fcst", "wet.fcst","hot.fcst","cold.fcst"]
 output_plots: ["prob.fcst", 
                "b20.fcst", "b33.fcst", "a66.fcst", "a80.fcst",
-               "dry.fcst", "hot.fcst"] 
+               "dry.fcst", "wet.fcst","hot.fcst","cold.fcst"] 
 output_leadtimes: [1]  # [1, 2, 3, 4, 5, 6, 7]
 output_trgt_type: ["trimesters"]  # ["trimesters", "months"]
 

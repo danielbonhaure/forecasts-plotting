@@ -853,10 +853,24 @@ PlotsHelper <- R6::R6Class(
         main_title <- glue::glue("{prob_fcst_desc}. ",
                                  "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
                                  "\n{calibrated_prob_xtrm}.")
+      } else if (data_type == "prob.xtrm.wet") {
+        prob_fcst_desc <- switch(lang, "en" = "Probability of extremely wet conditions", 
+                                 "es" = "Probabilidad de condiciones extremadamente húmedas",
+                                 "pt" = "Possibilidade de condições extremamente úmidas")
+        main_title <- glue::glue("{prob_fcst_desc}. ",
+                                 "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
+                                 "\n{calibrated_prob_xtrm}.")
       } else if (data_type == "prob.xtrm.hot") {
         prob_fcst_desc <- switch(lang, "en" = "Probability of extremely hot conditions", 
                                  "es" = "Probabilidad de condiciones extremadamente cálidas",
                                  "pt" = "Possibilidade de condições extremamente quentes")
+        main_title <- glue::glue("{prob_fcst_desc}. ",
+                                 "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
+                                 "\n{calibrated_prob_xtrm}.")
+      } else if (data_type == "prob.xtrm.cold") {
+        prob_fcst_desc <- switch(lang, "en" = "Probability of extremely cold conditions", 
+                                 "es" = "Probabilidad de condiciones extremadamente frías",
+                                 "pt" = "Possibilidade de condições extremamente frias")
         main_title <- glue::glue("{prob_fcst_desc}. ",
                                  "\n{issued_prob_xtrm} {initial_month} {initial_year}. ",
                                  "\n{calibrated_prob_xtrm}.")
@@ -912,7 +926,11 @@ PlotsHelper <- R6::R6Class(
         legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.xtrm.dry") {
         legend_title <- glue::glue("{probabilidad} (%)")
+      } else if (data_type == "prob.xtrm.wet") {
+        legend_title <- glue::glue("{probabilidad} (%)")
       } else if (data_type == "prob.xtrm.hot") {
+        legend_title <- glue::glue("{probabilidad} (%)")
+      } else if (data_type == "prob.xtrm.cold") {
         legend_title <- glue::glue("{probabilidad} (%)")
       }
       

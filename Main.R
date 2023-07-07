@@ -895,7 +895,8 @@ for ( i in indices ) {
     #
     
     if ( "b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ||
-         "dry.fcst" %in% output_plots || "hot.fcst" %in% output_plots ) {
+         "dry.fcst" %in% output_plots || "wet.fcst" %in% output_plots ||
+         "hot.fcst" %in% output_plots || "cold.fcst" %in% output_plots ) {
       
       logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos ",
                                   "de Eventos Extremos para el año: {data_year}"))
@@ -1021,12 +1022,20 @@ for ( i in indices ) {
         }
       }
       
+      # Definir paleta de colores de la NOAA
+      # Ver: https://www.weather.gov/news/211409-temperature-precipitation-maps
+      # Ver: https://www.cpc.ncep.noaa.gov/products/predictions/multi_season/13_seasonal_outlooks/color/churchill.php
+      noaa_escala_azules <- tail(RColorBrewer::brewer.pal(8, "PuBu"), 7)
+      noaa_escala_rojos <- tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7)
+      noaa_escala_marrones <- tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7)
+      noaa_escala_verdes <- tail(RColorBrewer::brewer.pal(8, "BuGn"), 7)
+      
       # Definir paleta de colores
       breaks <- c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
-      paleta_prcp_dry <- c('#FFFFFF', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(8, "YlOrBr"), 7))
-      paleta_temp_hot <- c('#FFFFFF', rep('#FFFFFF', 2),
-                           tail(RColorBrewer::brewer.pal(8, "YlOrRd"), 7))
+      paleta_prcp_dry <- c('#FFFFFF', rep('#FFFFFF', 2), noaa_escala_marrones)
+      paleta_prcp_wet <- c('#FFFFFF', rep('#FFFFFF', 2), noaa_escala_verdes)
+      paleta_temp_hot <- c('#FFFFFF', rep('#FFFFFF', 2), noaa_escala_rojos)
+      paleta_temp_cold <- c('#FFFFFF', rep('#FFFFFF', 2), noaa_escala_azules)
       
       # Crear gráficos
       if ( "dry.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
@@ -1055,6 +1064,32 @@ for ( i in indices ) {
             save_map = TRUE)
         }
       }
+      if ( "wet.fcst" %in% output_plots && base_file$variable == 'prcp' ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_wet_plot <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_above_80) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.xtrm.wet", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.wet", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_xtrm_wet_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_prcp_wet, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
+            save_map = TRUE)
+        }
+      }
       if ( "hot.fcst" %in% output_plots && base_file$variable == 't2m' ) {
         for ( lang in output_langs ) {
           prob_xtrm_hot_plot <- PlotsHelper$graficar_mapa(
@@ -1075,6 +1110,32 @@ for ( i in indices ) {
               base_file$basename, "_prob_xtrm_hot_", lang, ".html"),
             breaks = breaks,
             colors = paleta_temp_hot, 
+            rev_legend = TRUE,
+            dry_mask_df = dry_mask_trgt_months,
+            include_first = TRUE,
+            save_map = TRUE)
+        }
+      }
+      if ( "cold.fcst" %in% output_plots && base_file$variable == 't2m' ) {
+        for ( lang in output_langs ) {
+          prob_xtrm_cold_plot <- PlotsHelper$graficar_mapa(
+            data_df = prob_xtrm_df %>% 
+              dplyr::select(longitude, latitude, value = prob_below_20) %>%
+              dplyr::mutate(value = value * 100), 
+            gridded_data = xtrm_gridded_data,
+            main_title = PlotsHelper$definir_titulo("prob.xtrm.cold", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.cold", base_file, lang), 
+            data_type = base_file$type, lang = lang,
+            spatial_domain = list(
+              nla = max(prob_xtrm_df$latitude),
+              sla = min(prob_xtrm_df$latitude),
+              wlo = min(prob_xtrm_df$longitude),
+              elo = max(prob_xtrm_df$longitude)), 
+            output_file_abspath = paste0(
+              global_config$get_config(base_file$type)$output_folder$sissa, "/", 
+              base_file$basename, "_prob_xtrm_cold_", lang, ".html"),
+            breaks = breaks,
+            colors = paleta_temp_cold, 
             rev_legend = TRUE,
             dry_mask_df = dry_mask_trgt_months,
             include_first = TRUE,
