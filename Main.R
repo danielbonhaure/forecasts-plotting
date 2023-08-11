@@ -49,7 +49,8 @@ for (pack in list.of.packages) {
 # v. Verificar si están instalados los paquetes necesarios
 list.of.packages <- c("sf", "sp", "stringr", "logger", "tibble", "tools",
                       "RColorBrewer", "grDevices", "rlang", "purrr", "rlang", 
-                      "viridis", "glue", "here", "lubridate", "tidync")
+                      "viridis", "glue", "here", "lubridate", "tidync",
+                      "optparse")
 for (pack in list.of.packages) {
   if(pack %in% rownames(installed.packages()) == FALSE) {
     stop(paste0("Paquete no encontrado: ", pack))
@@ -77,6 +78,18 @@ source(here::here("ExpresionesRegulares.R"), echo = FALSE, chdir = TRUE)
 # -----------------------------------------------------------------------------#
 # ---- PASO 4. Leer archivo de configuracion y definir parámetros globales -----
 
+# Parsear argumentos
+option_list = list(
+  optparse::make_option(
+    c("--year"), type="integer", default=lubridate::year(lubridate::now()), 
+    help="Year that should be considered as initial condition (Default: %default)."),
+  optparse::make_option(
+    c("--month"), type="integer", default=lubridate::month(lubridate::now()), 
+    help="Month that should be considered as initial condition (Default: %default).")
+)
+opt = optparse::parse_args(
+  optparse::OptionParser(option_list=option_list))
+
 # Leer configuración
 global_config <- Config$new(here::here('config.yaml'))
 
@@ -84,8 +97,8 @@ global_config <- Config$new(here::here('config.yaml'))
 global_ic <- global_config$get_config('initial_conditions')
 if ( is.null(global_ic) ) {
   global_ic <- list()
-  global_ic$month <- lubridate::month(lubridate::now())
-  global_ic$year <- lubridate::year(lubridate::now())
+  global_ic$month <- opt$month
+  global_ic$year <- opt$year
 }
 
 # Obtener configuración para pronos CPT

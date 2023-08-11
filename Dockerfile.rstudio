@@ -65,6 +65,7 @@ RUN R -e "options(warn=2); install.packages('gstat', repos=${CRAN_MIRROR}, verbo
 RUN R -e "options(warn=2); install.packages('automap', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('leaflet.extras2', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('RCurl', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('optparse', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 
 
 
