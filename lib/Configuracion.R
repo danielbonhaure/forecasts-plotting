@@ -24,6 +24,37 @@ Config <- R6::R6Class(
         else
           from <- from[[tag]]
       return ( from )
+    },
+    
+    get_initial_conditions = function() {
+      
+      # Definir argumentos admitidos
+      option_list = list(
+        optparse::make_option(
+          c("--year"), type="integer", default=lubridate::year(lubridate::now()), 
+          help="Year that should be considered as initial condition (Default: %default)."),
+        optparse::make_option(
+          c("--month"), type="integer", default=lubridate::month(lubridate::now()), 
+          help="Month that should be considered as initial condition (Default: %default).")
+      )
+      
+      # Parsear argumentos del script
+      opt = optparse::parse_args(
+        optparse::OptionParser(option_list=option_list))
+      
+      # Obtener condiciones inciales desde el archivo de configuración
+      global_ic <- self$get_config('initial_conditions')
+      
+      # Definir condifiones inciales según corresponda
+      if ( is.null(global_ic) ) {
+        global_ic <- list()
+        global_ic$month <- as.integer(opt$month)
+        global_ic$year <- as.integer(opt$year)
+      }
+      
+      # Retornar condiciones iniciales
+      return (global_ic)
+      
     }
   ),
   private = list(
