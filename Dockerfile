@@ -273,7 +273,7 @@ RUN (echo "${CRON_TIME_STR} /usr/local/bin/Rscript ${APP_HOME}/Main.R >> /proc/1
 # Crear script para verificar salud del contendor
 RUN printf "#!/bin/bash\n\
 if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps | grep Main.R | wc -l) == 0 ] \n\
+   [ \$(ps -ef | grep Main.R | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\
