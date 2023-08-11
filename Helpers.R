@@ -793,10 +793,10 @@ PlotsHelper <- R6::R6Class(
         prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
-        prob_below_20_desc <- switch(lang, "en" = "below 20th precentil of the historical distribution", 
-                                     "es" = "inferior al percentil 20 de la distribución histórica",
-                                     "pt" = "abaixo do percentil 20 da distribuição histórica")
-        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_below_20_desc}. ",
+        prob_below_33_desc <- switch(lang, "en" = "below 33rd precentil of the historical distribution",
+                                     "es" = "inferior al percentil 33 de la distribución histórica",
+                                     "pt" = "abaixo do percentil 33 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_below_33_desc}. ",
                                  "\n{valid_for} {month_year}. ",
                                  "{issued} {initial_month} {initial_year}. ",
                                  "\n{calibrated} {modelo}.")
@@ -804,10 +804,10 @@ PlotsHelper <- R6::R6Class(
         prob_fcst_desc <- switch(lang, "en" = "Probabilistic forecast for", 
                                  "es" = "Pronóstico probabilístico para",
                                  "pt" = "Previsão probabilística para")
-        prob_above_80_desc <- switch(lang, "en" = "above 80th precentil of the historical distribution", 
-                                     "es" = "superior al percentil 80 de la distribución histórica",
-                                     "pt" = "acima do percentil 80 da distribuição histórica")
-        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_above_80_desc}. ",
+        prob_above_66_desc <- switch(lang, "en" = "above 66th precentil of the historical distribution",
+                                     "es" = "superior al percentil 66 de la distribución histórica",
+                                     "pt" = "acima do percentil 66 da distribuição histórica")
+        main_title <- glue::glue("{prob_fcst_desc} {tolower(variable_str)} {prob_above_66_desc}. ",
                                  "\n{valid_for} {month_year}. ",
                                  "{issued} {initial_month} {initial_year}. ",
                                  "\n{calibrated} {modelo}.")
