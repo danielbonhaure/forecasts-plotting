@@ -705,9 +705,9 @@ PlotsHelper <- R6::R6Class(
       modelo <- toupper(modelo)
       # El modelo MME de los pronos Climax, debe ser renombrado
       if ( toupper(modelo) == "MME" )
-        modelo <- switch(lang, "en" = "NMME individual models", 
-                         "es" = "modelos individuales NMME", 
-                         "pt" = "modelos individuais NMME")
+        modelo <- switch(lang, "en" = "NMME individual models",
+                         "es" = "modelos individuales del NMME",
+                         "pt" = "modelos individuais do NMME")
       
       initial_month <- meses_abb[global_ic$month]
       initial_year <- global_ic$year
