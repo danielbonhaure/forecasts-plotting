@@ -937,7 +937,7 @@ PlotsHelper <- R6::R6Class(
       
       # Definir nombre base por defecto
       nombre_base <- paste0(
-        base_file$basename, "_", gsub(".", "_", data_type), "_", lang)
+        base_file$basename, "_", gsub("\\.", "_", data_type), "_", lang)
       
       # Definir nombre base final
       if (data_type == "anom") {
