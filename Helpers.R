@@ -160,7 +160,8 @@ PlotsHelper <- R6::R6Class(
   public = list(
     graficar_mapa = function(data_df, gridded_data, spatial_domain, 
                              main_title, legend_title, data_type, lang,
-                             output_file_abspath, dry_mask_df,
+                             output_file_abspath, download_file_basename,
+                             dry_mask_df,
                              breaks = NULL, colors = NULL, rev_legend = FALSE,
                              include_first = FALSE, include_last = FALSE, 
                              save_map = TRUE) {
@@ -328,8 +329,7 @@ PlotsHelper <- R6::R6Class(
             sizeModes = list("A4Portrait", "A4Landscape"),
             exportOnly = TRUE,
             hideControlContainer = FALSE,
-            filename = basename(output_file_abspath) %>% 
-              tools::file_path_sans_ext() %>% paste0('.png'))) %>%
+            filename = download_file_basename)) %>%
         htmlwidgets::prependContent(
           PlotsHelper$definir_estilos_css()) %>%
         htmlwidgets::onRender(
@@ -344,9 +344,10 @@ PlotsHelper <- R6::R6Class(
       return ( m )
     },
     graficar_mapa_prob = function(data_df, gridded_data, spatial_domain,
-                                  main_title, legend_title, data_type, lang, 
-                                  output_file_abspath, dry_mask_df,
-                                  breaks = NULL, colors_below = NULL, 
+                                  main_title, legend_title, data_type, lang,
+                                  output_file_abspath, download_file_basename,
+                                  dry_mask_df,
+                                  breaks = NULL, colors_below = NULL,
                                   colors_normal = NULL, colors_above = NULL,
                                   save_map = TRUE) {
       
@@ -542,8 +543,7 @@ PlotsHelper <- R6::R6Class(
             sizeModes = list("A4Portrait", "A4Landscape"),
             exportOnly = TRUE,
             hideControlContainer = FALSE,
-            filename = basename(output_file_abspath) %>% 
-              tools::file_path_sans_ext() %>% paste0('.png'))) %>%
+            filename = download_file_basename)) %>%
         htmlwidgets::prependContent(
           PlotsHelper$definir_estilos_css()) %>%
         htmlwidgets::onRender(
@@ -931,6 +931,45 @@ PlotsHelper <- R6::R6Class(
       
       # Retornar título real
       return ( legend_title )
+      
+    },
+    definir_nombre_base_aux = function(data_type, base_file, lang, data_year = NULL) {
+      
+      # Definir nombre base por defecto
+      nombre_base <- paste0(
+        base_file$basename, "_", gsub(".", "_", data_type), "_", lang)
+      
+      # Definir nombre base final
+      if (data_type == "anom") {
+        invisible()
+      } else if (data_type == "corr") {
+        invisible()
+      } else if (data_type == "det.fcst") {
+        invisible()
+      } else if (data_type == "prob.fcst") {
+        invisible()
+      } else if (data_type == "prob.below.33") {
+        invisible()
+      } else if (data_type == "prob.above.66") {
+        invisible()
+      } else if (data_type == "uncal.fcst") {
+        invisible()
+      } else if (data_type == "prob.below.20") {
+        invisible()
+      } else if (data_type == "prob.above.80") {
+        invisible()
+      } else if (data_type == "prob.xtrm.dry") {
+        invisible()
+      } else if (data_type == "prob.xtrm.wet") {
+        invisible()
+      } else if (data_type == "prob.xtrm.hot") {
+        invisible()
+      } else if (data_type == "prob.xtrm.cold") {
+        invisible()
+      }
+      
+      # Retornar nombre base final
+      return ( nombre_base )
       
     }
   ),

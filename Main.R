@@ -443,8 +443,10 @@ for ( i in indices ) {
     corr_plot <- PlotsHelper$graficar_mapa(
       data_df = corr_df, 
       gridded_data = are_points_gridded(datos_entrada$pred_det_hcst_data$data),
-      main_title = PlotsHelper$definir_titulo("corr", base_file, lang), 
-      legend_title = PlotsHelper$definir_titulo_leyenda("corr", base_file, lang), 
+      main_title = PlotsHelper$definir_titulo(
+        "corr", base_file, lang), 
+      legend_title = PlotsHelper$definir_titulo_leyenda(
+        "corr", base_file, lang), 
       data_type = base_file$type, lang = lang, 
       spatial_domain = list(
         nla = max(corr_df$latitude),
@@ -454,6 +456,8 @@ for ( i in indices ) {
       output_file_abspath = paste0(
         global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
         base_file$basename, "_corr_", lang,".html"),
+      download_file_basename = PlotsHelper$definir_nombre_base_aux(
+        "corr", base_file, lang),
       breaks = c(-0.5,-0.1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
       colors = paleta_completa, 
       dry_mask_df = dry_mask_trgt_months,
@@ -546,8 +550,10 @@ for ( i in indices ) {
       anom_plot <- PlotsHelper$graficar_mapa(
         data_df = anom_df, 
         gridded_data = det_gridded_data,
-        main_title = PlotsHelper$definir_titulo("anom", base_file, lang, data_year), 
-        legend_title = PlotsHelper$definir_titulo_leyenda("anom", base_file, lang), 
+        main_title = PlotsHelper$definir_titulo(
+          "anom", base_file, lang, data_year), 
+        legend_title = PlotsHelper$definir_titulo_leyenda(
+          "anom", base_file, lang), 
         data_type = base_file$type, lang = lang,
         spatial_domain = list(
           nla = max(anom_df$latitude),
@@ -557,6 +563,8 @@ for ( i in indices ) {
         output_file_abspath = paste0(
           global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
           base_file$basename, "_anom_", lang, ".html"),
+        download_file_basename = PlotsHelper$definir_nombre_base_aux(
+          "anom", base_file, lang, data_year),
         breaks = breaks,
         colors = paleta_completa, 
         dry_mask_df = dry_mask_trgt_months,
@@ -625,8 +633,10 @@ for ( i in indices ) {
       det_fcst_plot <- PlotsHelper$graficar_mapa(
         data_df = det_fcst_df, 
         gridded_data = det_gridded_data,
-        main_title = PlotsHelper$definir_titulo("det.fcst", base_file, lang, data_year), 
-        legend_title = PlotsHelper$definir_titulo_leyenda("det.fcst", base_file, lang), 
+        main_title = PlotsHelper$definir_titulo(
+          "det.fcst", base_file, lang, data_year), 
+        legend_title = PlotsHelper$definir_titulo_leyenda(
+          "det.fcst", base_file, lang), 
         data_type = base_file$type, lang = lang,
         spatial_domain = list(
           nla = max(det_fcst_df$latitude),
@@ -636,6 +646,8 @@ for ( i in indices ) {
         output_file_abspath = paste0(
           global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
           base_file$basename, "_det_fcst_", lang, ".html"),
+        download_file_basename = PlotsHelper$definir_nombre_base_aux(
+          "det.fcst", base_file, lang, data_year),
         breaks = breaks,
         colors = paleta_completa, 
         dry_mask_df = dry_mask_trgt_months,
@@ -723,8 +735,10 @@ for ( i in indices ) {
         prob_fcst_plot <- PlotsHelper$graficar_mapa_prob(
           data_df = prob_fcst_df, 
           gridded_data = prob_gridded_data,
-          main_title = PlotsHelper$definir_titulo("prob.fcst", base_file, lang, data_year), 
-          legend_title = PlotsHelper$definir_titulo_leyenda("prob.fcst", base_file, lang), 
+          main_title = PlotsHelper$definir_titulo(
+            "prob.fcst", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda(
+            "prob.fcst", base_file, lang), 
           data_type = base_file$type, lang = lang,
           spatial_domain = list(
             nla = max(prob_fcst_df$latitude),
@@ -734,6 +748,8 @@ for ( i in indices ) {
           output_file_abspath = paste0(
             global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
             base_file$basename, "_prob_fcst_", lang, ".html"),
+          download_file_basename = PlotsHelper$definir_nombre_base_aux(
+            "prob.fcst", base_file, lang, data_year),
           breaks = breaks_prob_fcst,
           colors_below = paleta_below, 
           colors_normal = paleta_normal, 
@@ -770,8 +786,10 @@ for ( i in indices ) {
             dplyr::select(longitude, latitude, value = prob_below) %>%
             dplyr::mutate(value = value * 100), 
           gridded_data = xtrm_gridded_data,
-          main_title = PlotsHelper$definir_titulo("prob.below.33", base_file, lang, data_year), 
-          legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.33", base_file, lang), 
+          main_title = PlotsHelper$definir_titulo(
+            "prob.below.33", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda(
+            "prob.below.33", base_file, lang), 
           data_type = base_file$type, lang = lang,
           spatial_domain = list(
             nla = max(prob_fcst_df$latitude),
@@ -781,6 +799,8 @@ for ( i in indices ) {
           output_file_abspath = paste0(
             global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
             base_file$basename, "_prob_below_33_", lang, ".html"),
+          download_file_basename = PlotsHelper$definir_nombre_base_aux(
+            "prob.below.33", base_file, lang, data_year),
           breaks = breaks_prob_xtrm,
           colors = paleta_below_33, 
           rev_legend = TRUE,
@@ -796,8 +816,10 @@ for ( i in indices ) {
             dplyr::select(longitude, latitude, value = prob_above) %>%
             dplyr::mutate(value = value * 100), 
           gridded_data = xtrm_gridded_data,
-          main_title = PlotsHelper$definir_titulo("prob.above.66", base_file, lang, data_year), 
-          legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.66", base_file, lang), 
+          main_title = PlotsHelper$definir_titulo(
+            "prob.above.66", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda(
+            "prob.above.66", base_file, lang), 
           data_type = base_file$type, lang = lang,
           spatial_domain = list(
             nla = max(prob_fcst_df$latitude),
@@ -807,6 +829,8 @@ for ( i in indices ) {
           output_file_abspath = paste0(
             global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
             base_file$basename, "_prob_above_66_", lang, ".html"),
+          download_file_basename = PlotsHelper$definir_nombre_base_aux(
+            "prob.above.66", base_file, lang, data_year),
           breaks = breaks_prob_xtrm,
           colors = paleta_above_66, 
           rev_legend = TRUE,
@@ -864,8 +888,10 @@ for ( i in indices ) {
         uncal_fcst_plot <- PlotsHelper$graficar_mapa(
           data_df = uncal_fcst_df, 
           gridded_data = uncal_gridded_data,
-          main_title = PlotsHelper$definir_titulo("uncal.fcst", base_file, lang, data_year), 
-          legend_title = PlotsHelper$definir_titulo_leyenda("uncal.fcst", base_file, lang), 
+          main_title = PlotsHelper$definir_titulo(
+            "uncal.fcst", base_file, lang, data_year), 
+          legend_title = PlotsHelper$definir_titulo_leyenda(
+            "uncal.fcst", base_file, lang), 
           data_type = base_file$type, lang = lang,
           spatial_domain = list(
             nla = max(uncal_fcst_df$latitude),
@@ -875,6 +901,8 @@ for ( i in indices ) {
           output_file_abspath = paste0(
             global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
             base_file$basename, "_uncal_fcst_", lang, ".html"),
+          download_file_basename = PlotsHelper$definir_nombre_base_aux(
+            "uncal.fcst", base_file, lang, data_year),
           breaks = breaks,
           colors = paleta_completa, 
           dry_mask_df = dry_mask_trgt_months,
@@ -971,8 +999,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_below_20) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.below.20", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.below.20", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.below.20", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.below.20", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -982,6 +1012,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
               base_file$basename, "_prob_below_20_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.below.20", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_below_20, 
             rev_legend = TRUE,
@@ -997,8 +1029,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_above_80) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.above.80", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.above.80", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.above.80", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.above.80", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -1008,6 +1042,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$crcsas, "/", 
               base_file$basename, "_prob_above_80_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.above.80", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_above_80, 
             rev_legend = TRUE,
@@ -1040,8 +1076,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_below_20) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.xtrm.dry", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.dry", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.xtrm.dry", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.xtrm.dry", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -1051,6 +1089,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$sissa, "/", 
               base_file$basename, "_prob_xtrm_dry_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.xtrm.dry", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_prcp_dry, 
             rev_legend = TRUE,
@@ -1066,8 +1106,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_above_80) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.xtrm.wet", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.wet", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.xtrm.wet", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.xtrm.wet", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -1077,6 +1119,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$sissa, "/", 
               base_file$basename, "_prob_xtrm_wet_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.xtrm.wet", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_prcp_wet, 
             rev_legend = TRUE,
@@ -1092,8 +1136,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_above_80) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.xtrm.hot", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.hot", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.xtrm.hot", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.xtrm.hot", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -1103,6 +1149,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$sissa, "/", 
               base_file$basename, "_prob_xtrm_hot_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.xtrm.hot", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_temp_hot, 
             rev_legend = TRUE,
@@ -1118,8 +1166,10 @@ for ( i in indices ) {
               dplyr::select(longitude, latitude, value = prob_below_20) %>%
               dplyr::mutate(value = value * 100), 
             gridded_data = xtrm_gridded_data,
-            main_title = PlotsHelper$definir_titulo("prob.xtrm.cold", base_file, lang, data_year), 
-            legend_title = PlotsHelper$definir_titulo_leyenda("prob.xtrm.cold", base_file, lang), 
+            main_title = PlotsHelper$definir_titulo(
+              "prob.xtrm.cold", base_file, lang, data_year), 
+            legend_title = PlotsHelper$definir_titulo_leyenda(
+              "prob.xtrm.cold", base_file, lang), 
             data_type = base_file$type, lang = lang,
             spatial_domain = list(
               nla = max(prob_xtrm_df$latitude),
@@ -1129,6 +1179,8 @@ for ( i in indices ) {
             output_file_abspath = paste0(
               global_config$get_config(base_file$type)$output_folder$sissa, "/", 
               base_file$basename, "_prob_xtrm_cold_", lang, ".html"),
+            download_file_basename = PlotsHelper$definir_nombre_base_aux(
+              "prob.xtrm.cold", base_file, lang, data_year),
             breaks = breaks,
             colors = paleta_temp_cold, 
             rev_legend = TRUE,
