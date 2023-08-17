@@ -1001,6 +1001,9 @@ PlotsHelper$definir_titulo = function(...) {
 PlotsHelper$definir_titulo_leyenda = function(...) {
   PlotsHelper$public_methods$definir_titulo_leyenda(...)
 }
+PlotsHelper$definir_nombre_base_aux = function(...) {
+  PlotsHelper$public_methods$definir_nombre_base_aux(...)
+}
 
 CorrelationHelper <- R6::R6Class(
   classname = "CorrelationHelper",
