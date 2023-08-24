@@ -278,38 +278,43 @@ DatosEntrada <- R6::R6Class(
       self$pred_prob_hcst_data$add_categories()
     },
     pv_get_pred_prob_xtrm_data = function() {
-      # Extraer configuración
-      prob_xtrm_config <- private$pv_config$get_config(self$files_info$type)
-      
-      # Identificar archivos con los datos
-      prob_xtrm_file <- paste0(
-        prob_xtrm_config$input_folders$calibrated_data$forecasts, '/', 
-        self$files_info$prob_xtrm_file)
-      
-      # Crear proveedor de factoría
-      factory_provider <- FcstDataFactoryProvider$new(
-        self$variable)
-      # Obtener factoría
-      data_factory <- factory_provider$get_factory()
-      
-      # Definir parámetros para creación del objeto 
-      # que permite obtener los datos
-      params <- list()
-      params[['data_file']] <- prob_xtrm_file
-      params[['data_variable']] <- self$variable
-      params[['target_months']] <- 
-        stringr::str_split(self$files_info$target_months, '-') %>% 
-        purrr::reduce(c) %>% as.numeric()
-      params[['time']] <- 'init_time'
-      # Crear objeto que permite acceder a los datos
-      self$pred_prob_xtrm_data <- do.call(data_factory$create_prob_obj, params)
-      
-      # Agregar columna con categorías
-      self$pred_prob_xtrm_data$add_categories()
+      # La probabilidad de extremos solo se calcula para EREG
+      if (self$files_info$type == 'ereg') {
+        
+        # Extraer configuración
+        prob_xtrm_config <- private$pv_config$get_config(self$files_info$type)
+        
+        # Identificar archivos con los datos
+        prob_xtrm_file <- paste0(
+          prob_xtrm_config$input_folders$calibrated_data$forecasts, '/',
+          self$files_info$prob_xtrm_file)
+        
+        # Crear proveedor de factoría
+        factory_provider <- FcstDataFactoryProvider$new(
+          self$variable)
+        # Obtener factoría
+        data_factory <- factory_provider$get_factory()
+
+        # Definir parámetros para creación del objeto
+        # que permite obtener los datos
+        params <- list()
+        params[['data_file']] <- prob_xtrm_file
+        params[['data_variable']] <- self$variable
+        params[['target_months']] <-
+          stringr::str_split(self$files_info$target_months, '-') %>%
+          purrr::reduce(c) %>% as.numeric()
+        params[['time']] <- 'init_time'
+        # Crear objeto que permite acceder a los datos
+        self$pred_prob_xtrm_data <- do.call(data_factory$create_prob_obj, params)
+        
+        # Agregar columna con categorías
+        self$pred_prob_xtrm_data$add_categories()
+        
+      }
     },
     pv_get_uncalibrated_fcst_data = function() {
       # No siempre está disponible el prono sin calibrar
-      if ( !is.null(self$files_info$uncalibrated_fcst_file) && 
+      if ( !is.null(self$files_info$uncalibrated_fcst_file) &&
            !is.na(self$files_info$uncalibrated_fcst_file) ) {
         
         # Extraer configuración
@@ -317,7 +322,7 @@ DatosEntrada <- R6::R6Class(
         
         # Identificar archivos con los datos
         uncal_fcst_file <- paste0(
-          uncal_fcst_config$input_folders$uncalibrated_data, '/', 
+          uncal_fcst_config$input_folders$uncalibrated_data, '/',
           self$files_info$uncalibrated_fcst_file)
         
         # Crear estrategia de corrección
@@ -348,8 +353,6 @@ DatosEntrada <- R6::R6Class(
           params[['correction_strategy']] <- correction_strategy
         # Crear objeto que permite acceder a los datos
         self$uncalibrated_fcst_data <- do.call(data_factory$create_det_obj, params)
-        
-        
         
       }
     }
