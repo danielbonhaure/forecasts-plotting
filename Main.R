@@ -4,19 +4,7 @@
 # -----------------------------------------------------------------------------#
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 1. Crear archivo con PID, para verificar salud del contenedor ----
-
-# Open a new file for writing
-fileConn <- file("/tmp/plotter.pid", "w")
-# Write some text to the file
-writeLines(as.character(Sys.getpid()), fileConn)
-# Close the file connection
-close(fileConn)
-
-# ------------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------#
-# ---- PASO 2. Inicializar entorno ----
+# ---- PASO -. Cambiar carpeta de trabajo actual ----
 
 # i. Cambiar carpeta de trabajo actual a la de este script
 getScriptPath <- function(){
@@ -31,14 +19,30 @@ getScriptPath <- function(){
 }
 setwd( getScriptPath() )
 
+# ------------------------------------------------------------------------------
 
-# ii. Borrar objetos existentes en el ambiente
+# -----------------------------------------------------------------------------#
+# ---- PASO 1. Crear archivo con PID, para verificar salud del contenedor ----
+
+# Open a new file for writing
+fileConn <- file("/tmp/plotter.pid", "w")
+# Write some text to the file
+writeLines(as.character(Sys.getpid()), fileConn)
+# Close the file connection
+close(fileConn)
+
+# ------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------#
+# ---- PASO 2. Inicializar entorno ----
+
+# i. Borrar objetos existentes en el ambiente
 rm(list = ls()); gc()
 
-# iii. Configurar huso horario en UTC
+# ii. Configurar huso horario en UTC
 Sys.setenv(TZ = "UTC")
 
-# iv. Cargar paquetes a utilizar
+# iii. Cargar paquetes a utilizar
 list.of.packages <- c("dplyr")
 for (pack in list.of.packages) {
   if (! require(pack, character.only = TRUE)) {
@@ -46,7 +50,7 @@ for (pack in list.of.packages) {
   }
 }
 
-# v. Verificar si están instalados los paquetes necesarios
+# iv. Verificar si están instalados los paquetes necesarios
 list.of.packages <- c("sf", "sp", "stringr", "logger", "tibble", "tools",
                       "RColorBrewer", "grDevices", "rlang", "purrr", "rlang", 
                       "viridis", "glue", "here", "lubridate", "tidync")
