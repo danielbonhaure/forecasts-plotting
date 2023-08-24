@@ -487,10 +487,12 @@ for ( i in indices ) {
       points_df = datos_entrada$pred_prob_fcst_data$data %>%
         dplyr::filter(year == data_year) %>%
         dplyr::select(longitude, latitude))
-    xtrm_gridded_data <- are_points_gridded(
-      points_df = datos_entrada$pred_prob_xtrm_data$data %>%
-        dplyr::filter(year == data_year) %>%
-        dplyr::select(longitude, latitude))
+    if ( base_file$type == "ereg" ) {
+      xtrm_gridded_data <- are_points_gridded(
+        points_df = datos_entrada$pred_prob_xtrm_data$data %>%
+          dplyr::filter(year == data_year) %>%
+          dplyr::select(longitude, latitude))
+    }
     
     #
     # Crear gráfico de anomalías
@@ -779,7 +781,7 @@ for ( i in indices ) {
     paleta_above_66 <- if (base_file$variable == "prcp") escala_prcp_a66 else escala_temp_a66
     
     # Crear gráfico
-    if ( "b33.fcst" %in% output_plots ) {
+    if ( base_file$type == "ereg" && "b33.fcst" %in% output_plots ) {
       for ( lang in output_langs ) {
         prob_xtrm_plot_below_33 <- PlotsHelper$graficar_mapa(
           data_df = prob_fcst_df %>% 
@@ -809,7 +811,7 @@ for ( i in indices ) {
           save_map = TRUE)
       }
     }
-    if ( "a66.fcst" %in% output_plots ) {
+    if ( base_file$type == "ereg" && "a66.fcst" %in% output_plots ) {
       for ( lang in output_langs ) {
         prob_xtrm_plot_above_66 <- PlotsHelper$graficar_mapa(
           data_df = prob_fcst_df %>% 
@@ -917,9 +919,10 @@ for ( i in indices ) {
     # 20% inferior, o en el 20% superior, de la distribución histórica
     #
     
-    if ( "b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ||
-         "dry.fcst" %in% output_plots || "wet.fcst" %in% output_plots ||
-         "hot.fcst" %in% output_plots || "cold.fcst" %in% output_plots ) {
+    if ( base_file$type == "ereg" &&
+         ("b20.fcst" %in% output_plots || "a80.fcst" %in% output_plots ||
+          "dry.fcst" %in% output_plots || "wet.fcst" %in% output_plots ||
+          "hot.fcst" %in% output_plots || "cold.fcst" %in% output_plots) ) {
       
       logger::log_info(glue::glue("Inicia el graficado de Pronósticos Probabilísticos ",
                                   "de Eventos Extremos para el año: {data_year}"))
