@@ -158,9 +158,8 @@ ARG PLOTTER_DATA
 # Create PLOTTER_HOME folder
 RUN mkdir -p ${PLOTTER_HOME}
 
-# Copy PLOTTER code
-COPY *.R ${PLOTTER_HOME}/
-COPY plot.yaml ${PLOTTER_HOME}/plot.yaml
+# Copy project
+COPY . ${PLOTTER_HOME}
 
 # Create input and output folders (these folders are too big so they must be used them as volumes)
 RUN mkdir -p ${PLOTTER_DATA}/shapefiles
