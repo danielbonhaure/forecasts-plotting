@@ -88,7 +88,7 @@ global_config <- Config$new(here::here('config.yaml'))
 global_ic <- global_config$get_initial_conditions()
 
 # Obtener configuración para pronos CPT
-config_cpt <- global_config$get_config('acc-cpt')
+config_cpt <- global_config$get_config('pycpt')
 
 # Obtener configuración para pronos EREG
 config_ereg <- global_config$get_config('ereg')
@@ -126,7 +126,7 @@ base_files_struct <- tibble::tibble(
   obs_data_source = character()
 )
 
-# Identificar archivos ACC-CPT
+# Identificar archivos pyCPT (ACC-CPT)
 cpt_base_files <- list.files(
   path = config_cpt$input_folders$calibrated_data$forecasts, 
   pattern = cpt_files_regex,
@@ -137,7 +137,7 @@ if ( length(cpt_base_files) == 0 ) {
   cpt_base_files <- cpt_base_files %>% 
     tibble::as_tibble_col("basename") %>%
     dplyr::mutate(
-      type = 'acc-cpt',
+      type = 'pycpt',
       variable = stringr::str_extract(basename, cpt_regex_variables),
       basename = stringr::str_replace(basename, '_forecast$', '')
     ) %>%

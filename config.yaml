@@ -13,7 +13,7 @@ unify_grid_resolution: 1
 #   year: 2023
 
 shapefiles:
-  crcsas: "/data/shapefiles/CRC_SAS.shp"
+  crcsas: "/data/shapefiles/CRC-SAS.shp"
   
 images: 
   crcsas: "./logos/logo-crcsas.png"
@@ -25,22 +25,22 @@ output_langs: ["en", "es", "pt"]
 # output_plots: ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst", 
 #                "b20.fcst", "b33.fcst", "a66.fcst", "a80.fcst", 
 #                "dry.fcst", "wet.fcst","hot.fcst","cold.fcst"]
-output_plots: ["prob.fcst", "uncal.fcst", 
+output_plots: ["prob.fcst", 
                "b20.fcst", "b33.fcst", "a66.fcst", "a80.fcst",
                "dry.fcst", "wet.fcst","hot.fcst","cold.fcst"] 
 output_leadtimes: [1]  # [1, 2, 3, 4, 5, 6, 7]
 output_trgt_type: ["trimesters"]  # ["trimesters", "months"]
 
-acc-cpt:  
+pycpt:  
   variables: ["prcp", "t2m"]
   modelos: ["ecmwf", "nmme"]  # ["ecmwf", "nmme", "nasa"]
   fuentes: ["chirps", "era5-land"]  # ["chirps", "era5-land", "crcsas"]
   input_folders:
-    observed_data: "/data/acc-cpt/input/predictands"
-    uncalibrated_data: "/data/acc-cpt/input/predictors"
+    observed_data: "/data/pycpt/input/predictands"
+    uncalibrated_data: "/data/pycpt/input/predictors"
     calibrated_data: 
-      forecasts: "/data/acc-cpt/output"
-      hindcasts: "/data/acc-cpt/output"
+      forecasts: "/data/pycpt/output"
+      hindcasts: "/data/pycpt/output"
   correction_strategies:
     calibrated_data:
       det_values:
@@ -49,8 +49,8 @@ acc-cpt:
         hindcasts: 
           prcp: "cpt_invalid_prcp_values"
   output_folder:
-    crcsas: "/data/acc-cpt/plots/web-crc-sas"
-    sissa: "/data/acc-cpt/plots/web-sissa"
+    crcsas: "/data/pycpt/plots/web-crc-sas"
+    sissa: "/data/pycpt/plots/web-sissa"
   suavizar_graficos: TRUE
 
 ereg:  

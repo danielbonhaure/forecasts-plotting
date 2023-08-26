@@ -391,10 +391,10 @@ USER $USR_NAME
 
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name plot-pronos \
-#   --volume <path-to-folder>:/data/acc-cpt/input/predictors \
-#   --volume <path-to-folder>:/data/acc-cpt/input/predictands \
-#   --volume <path-to-folder>:/data/acc-cpt/output \
-#   --volume <path-to-folder>:/data/acc-cpt/plots/web-crc-sas \
+#   --volume <path-to-folder>:/data/pycpt/input/predictors \
+#   --volume <path-to-folder>:/data/pycpt/input/predictands \
+#   --volume <path-to-folder>:/data/pycpt/output \
+#   --volume <path-to-folder>:/data/pycpt/plots/web-crc-sas \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
@@ -408,9 +408,9 @@ USER $USR_NAME
 
 # CORRER MANUALMENTE
 # docker run --name plot-pronos \
-#   --volume <path-to-folder>:/data/acc-cpt/input/predictors \
-#   --volume <path-to-folder>:/data/acc-cpt/input/predictands \
-#   --volume <path-to-folder>:/data/acc-cpt/output \
+#   --volume <path-to-folder>:/data/pycpt/input/predictors \
+#   --volume <path-to-folder>:/data/pycpt/input/predictands \
+#   --volume <path-to-folder>:/data/pycpt/output \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
 #   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \

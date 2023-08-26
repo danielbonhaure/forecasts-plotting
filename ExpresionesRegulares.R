@@ -55,7 +55,7 @@ csum <- function(x, y, modulo) {
 #
 
 
-config_cpt <- global_config$get_config('acc-cpt')
+config_cpt <- global_config$get_config('pycpt')
 
 cpt_regex_modelos <- paste0('(?:', paste(config_cpt$modelos, collapse='|'), ')')
 

@@ -108,7 +108,7 @@ DatosEntrada <- R6::R6Class(
       params[['data_file']] <- obs_file
       params[['data_variable']] <- self$variable
       params[['time']] <- 'init_time'
-      if (!is.null(private$pv_config$get_config("spatial_domain")) && self$files_info$type == 'acc-cpt')
+      if (!is.null(private$pv_config$get_config("spatial_domain")) && self$files_info$type == 'pycpt')
         params[['bbox']] <- private$pv_config$get_config("spatial_domain")
       if (!is.null(correction_strategy))
         params[['correction_strategy']] <- correction_strategy
