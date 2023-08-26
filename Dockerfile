@@ -16,13 +16,13 @@
 ##########################
 
 # Set R version
-ARG R_VERSION=4.2
+ARG R_VERSION="4.2"
 
-# Set APP installation folder
-ARG APP_HOME=/opt/plotter
+# Set PLOTTER HOME
+ARG PLOTTER_HOME="/opt/plotter"
 
-# App data folder
-ARG APP_DATA=/data
+# Set PLOTTER data folder
+ARG PLOTTER_DATA="/data"
 
 # Set user name and id
 ARG USR_NAME="nonroot"
@@ -142,11 +142,142 @@ ENV R_LIBS_SITE="/usr/local/lib/R/site-library"
 
 
 ###################################
-## Stage 3: Create non-root user ##
+## Stage 3: Create PLOTTER image ##
+###################################
+
+# Create PLOTTER image
+FROM r_final AS plotter_builder
+
+# set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew PLOTTER ARGs
+ARG PLOTTER_HOME
+ARG PLOTTER_DATA
+
+# Create PLOTTER_HOME folder
+RUN mkdir -p ${PLOTTER_HOME}
+
+# Copy PLOTTER code
+COPY *.R ${PLOTTER_HOME}/
+COPY plot.yaml ${PLOTTER_HOME}/plot.yaml
+
+# Create input and output folders (these folders are too big so they must be used them as volumes)
+RUN mkdir -p ${PLOTTER_DATA}/shapefiles
+RUN mkdir -p ${PLOTTER_DATA}/pycpt/input/predictands
+RUN mkdir -p ${PLOTTER_DATA}/pycpt/input/predictors
+RUN mkdir -p ${PLOTTER_DATA}/pycpt/output
+RUN mkdir -p ${PLOTTER_DATA}/pycpt/plots/web-crc-sas
+RUN mkdir -p ${PLOTTER_DATA}/pycpt/plots/web-sissa
+RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_output
+RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_output/rt_forecasts
+RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_output/comb_forecasts
+RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_figuras/web-crc-sas
+RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_figuras/web-sissa
+RUN mkdir -p ${PLOTTER_DATA}/ereg/descargas/NMME
+
+
+
+###########################################
+## Stage 4: Install management packages  ##
+###########################################
+
+# Create image
+FROM plotter_builder AS plotter_mgmt
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # install Tini (https://github.com/krallin/tini#using-tini)
+        tini \
+        # to see process with pid 1
+        htop procps \
+        # to allow edit files
+        vim \
+        # to run process with cron
+        cron && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup cron to allow it run as a non root user
+RUN chmod u+s $(which cron)
+
+# Add Tini (https://github.com/krallin/tini#using-tini)
+ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
+
+
+
+########################################
+## Stage 5: Setup PLOTTER core image  ##
+########################################
+
+# Create image
+FROM plotter_mgmt AS plotter-core
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew PLOTTER_HOME
+ARG PLOTTER_HOME
+
+# Renew CRON ARGs
+ARG CRON_TIME_STR
+
+# Set environment variables
+ENV CRON_TIME_STR=${CRON_TIME_STR}
+
+# Crear archivo de configuración de CRON
+RUN printf "\n\
+# Setup cron to run files processor \n\
+${CRON_TIME_STR} /usr/local/bin/Rscript ${PLOTTER_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1\n\
+\n" > ${PLOTTER_HOME}/crontab.txt
+RUN chmod a+rw ${PLOTTER_HOME}/crontab.txt
+
+# Setup CRON for root user
+RUN (cat ${PLOTTER_HOME}/crontab.txt) | crontab -
+
+# Crear script de inicio.
+RUN printf "#!/bin/bash \n\
+set -e \n\
+\n\
+# Reemplazar tiempo ejecución automática del procesador de archivos \n\
+crontab -l | sed \"/Main.R/ s|^\S* \S* \S* \S* \S*|\$CRON_TIME_STR|g\" | crontab - \n\
+\n\
+# Ejecutar cron \n\
+cron -fL 15 \n\
+\n" > /startup.sh
+RUN chmod a+x /startup.sh
+
+# Create script to check container health
+RUN printf "#!/bin/bash\n\
+if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
+   [ \$(ps -ef | grep Main.R | wc -l) == 0 ] \n\
+then \n\
+  exit 1 \n\
+else \n\
+  exit 0 \n\
+fi \n\
+\n" > /check-healthy.sh
+RUN chmod a+x /check-healthy.sh
+
+# Run your program under Tini (https://github.com/krallin/tini#using-tini)
+CMD [ "bash", "-c", "/startup.sh" ]
+# or docker run your-image /your/program ...
+
+# Verificar si hubo alguna falla en la ejecución del replicador
+HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
+
+
+
+###################################
+## Stage 6: Create non-root user ##
 ###################################
 
 # Create image
-FROM r_final AS non_root
+FROM plotter-core AS plotter_nonroot_builder
 
 # Load global USER args
 ARG USR_NAME
@@ -183,8 +314,8 @@ RUN echo "$USR_NAME:$USER_PWD" | chpasswd
 
 # Add non-root user to sudoers and to adm group
 # The adm group was added to allow non-root user to see logs
-RUN adduser $USR_NAME sudo && \
-    adduser $USR_NAME adm
+RUN usermod -aG sudo $USR_NAME && \
+    usermod -aG adm $USR_NAME
 
 # To allow sudo without password
 # RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
@@ -192,131 +323,32 @@ RUN adduser $USR_NAME sudo && \
 
 
 
-###########################################
-## Stage 4: Install management packages  ##
-###########################################
-
-# Create image
-FROM non_root AS base_builder
-
-# Set environment variables
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # install Tini (https://github.com/krallin/tini#using-tini)
-        tini \
-        # to see process with pid 1
-        htop \
-        # to allow edit files
-        vim \
-        # to run process with cron
-        cron && \
-    rm -rf /var/lib/apt/lists/*
-
-# Setup cron to allow it run as a non root user
-RUN chmod u+s $(which cron)
-
-# Add Tini (https://github.com/krallin/tini#using-tini)
-ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
-
-
-
-####################################
-## Stage 5: Install and setup APP ##
-####################################
-
-# Create image
-FROM base_builder AS app_builder
-
-# Set environment variables
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Renew ARGs
-ARG APP_HOME
-ARG APP_DATA
-ARG USR_NAME
-ARG GRP_NAME
-
-# Renew CRON ARGs
-ARG CRON_TIME_STR
-
-# Create APP_HOME folder and change its owner
-RUN mkdir -p $APP_HOME && chown -R $USR_NAME:$GRP_NAME $APP_HOME
-
-# Copy project
-COPY --chown=$USR_NAME:$GRP_NAME . $APP_HOME
-
-# Create input and output folders (these folders are too big so they must be used them as volumes)
-RUN mkdir -p ${APP_DATA}/shapefiles
-RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictands
-RUN mkdir -p ${APP_DATA}/acc-cpt/input/predictors
-RUN mkdir -p ${APP_DATA}/acc-cpt/output
-RUN mkdir -p ${APP_DATA}/acc-cpt/plots/web-crc-sas
-RUN mkdir -p ${APP_DATA}/acc-cpt/plots/web-sissa
-RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output
-RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/rt_forecasts
-RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_output/comb_forecasts
-RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_figuras/web-crc-sas
-RUN mkdir -p ${APP_DATA}/ereg/generados/nmme_figuras/web-sissa
-RUN mkdir -p ${APP_DATA}/ereg/descargas/NMME
-
-# Crear archivo de configuración de CRON
-RUN printf "\n\
-# Setup cron to run files processor \n\
-${CRON_TIME_STR} /usr/local/bin/Rscript ${APP_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1\n\
-\n" > /tmp/crontab.txt
-RUN (echo "${CRON_TIME_STR} /usr/local/bin/Rscript ${APP_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1") 
-
-# Crear script para verificar salud del contendor
-RUN printf "#!/bin/bash\n\
-if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep Main.R | wc -l) == 0 ] \n\
-then \n\
-  exit 1 \n\
-else \n\
-  exit 0 \n\
-fi \n\
-\n" > /check-healthy.sh
-RUN chmod a+x /check-healthy.sh
-
-# Definir variables de entorno para el contendor final
-ENV CRON_TIME_STR=${CRON_TIME_STR}
-
-# Crear script de inicio.
-RUN printf "#!/bin/bash \n\
-set -e \n\
-\n\
-# Reemplazar tiempo ejecución automática del procesador de archivos \n\
-crontab -l | sed \"/Main.R/ s|^\S* \S* \S* \S* \S*|\$CRON_TIME_STR|g\" | crontab - \n\
-\n\
-# Ejecutar cron \n\
-cron -fL 15 \n\
-\n" > /startup.sh
-RUN chmod a+x /startup.sh
-
-
-
 ############################################
-## Stage 6: Setup and run final APP image ##
+## Stage 7: Setup and run final APP image ##
 ############################################
 
 # Create image
-FROM app_builder AS final_app_image
+FROM plotter_nonroot_builder AS plotter-nonroot
 
 # Become root
 USER root
 
-# Renew the ARG
+# Renew PLOTTER_HOME
+ARG PLOTTER_HOME
+
+# Renew USER ARGs
 ARG USR_NAME
+ARG USER_UID
+ARG USER_GID
+
+# Change files owner
+RUN chown -R $USER_UID:$USER_GID $PLOTTER_HOME
 
 # Setup cron to allow it run as a non root user
 RUN chmod u+s $(which cron)
 
 # Setup cron
-RUN (cat /tmp/crontab.txt) | crontab -u $USR_NAME -
+RUN (cat $PLOTTER_HOME/crontab.txt) | crontab -u $USR_NAME -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
@@ -335,20 +367,23 @@ WORKDIR /home/$USR_NAME
 USER $USR_NAME
 
 
-
-####################################
-## Stage 7: Set the DEFAULT image ##
-####################################
-
-FROM final_app_image
-
-
-
-# CONSTRUIR CONTENEDOR
+# Activar docker build kit
 # export DOCKER_BUILDKIT=1
+
+# CONSTRUIR IMAGEN (CORE)
 # docker build --force-rm \
-#   --target final_app_image \
-#   --tag plotter:latest .
+#   --target plotter-core \
+#   --tag ghcr.io/danielbonhaure/forecasts-plotting:plotter-core-v1.0 \
+#   --build-arg CRON_TIME_STR="0 12 18 * *" \
+#   --file Dockerfile .
+
+# LEVANTAR IMAGEN A GHCR
+# docker push ghcr.io/danielbonhaure/forecasts-plotting:plotter-core-v1.0
+
+# CONSTRUIR IMAGEN (NON-ROOT
+# docker build --force-rm \
+#   --target plotter-nonroot \
+#   --tag plotter-nonroot:latest \
 #   --build-arg USER_UID=$(stat -c "%u" .) \
 #   --build-arg USER_GID=$(stat -c "%g" .) \
 #   --build-arg CRON_TIME_STR="0 12 18 * *" \
@@ -369,7 +404,7 @@ FROM final_app_image
 #   --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
 #   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
 #   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
-#   --detach plotter:latest
+#   --detach plotter-nonroot:latest
 
 # CORRER MANUALMENTE
 # docker run --name plot-pronos \
@@ -386,5 +421,6 @@ FROM final_app_image
 #   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
 #   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
 #   --volume <path-to-file>:/opt/plotter/config.yaml \
-#   --rm plotter:latest /usr/local/bin/Rscript /opt/plotter/Main.R
+#   --rm plotter-nonroot:latest Rscript /opt/plotter/Main.R --year 2023 --month 6
+
 

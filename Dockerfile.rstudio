@@ -88,6 +88,7 @@ RUN R -e "options(warn=2); install.packages('optparse', repos=${CRAN_MIRROR}, ve
 #  --volume $(pwd):/home/rstudio/forecasts-plotting \
 #  --workdir /home/rstudio/forecasts-plotting \
 #  --publish 127.0.0.1:8787:8787 \
+#  --user root:$(stat -c "%g" .) \
 #  --detach plotter-rstudio:latest
 
 # In a Web Browser, go to http://localhost:8787/
