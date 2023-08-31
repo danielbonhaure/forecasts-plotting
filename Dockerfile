@@ -278,7 +278,7 @@ HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
 # Create image
 FROM plotter-core AS plotter_nonroot_builder
 
-# Load global USER args
+# Renew USER args
 ARG USR_NAME
 ARG USER_UID
 ARG GRP_NAME
