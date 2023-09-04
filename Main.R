@@ -186,7 +186,7 @@ if ( length(cpt_base_files) == 0 ) {
     dplyr::select(base_files_struct %>% names())
 }
 
-# Identificar Archivos EREG-Climax
+# Identificar Archivos EREG-Climar
 ereg_base_files <- list.files(
   path = config_ereg$input_folders$calibrated_data$forecasts, 
   pattern = ereg_files_regex,

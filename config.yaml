@@ -19,7 +19,7 @@ images:
   crcsas: "./logos/logo-crcsas.png"
   smn: "./logos/logo-smn.png"
   cima: "./logos/logo-cima.png"
-  climax: "./logos/logo-climax.png"
+  climar: "./logos/logo-climar.png"
   
 output_langs: ["en", "es", "pt"]
 # output_plots: ["corr", "anom", "det.fcst", "prob.fcst", "uncal.fcst", 

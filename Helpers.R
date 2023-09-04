@@ -580,12 +580,12 @@ PlotsHelper <- R6::R6Class(
                                   position = "bottomleft",
                                   className = "info legend logos cima")
             else . } %>%
-          { if ( data_type == 'ereg' && file.exists(global_images$climax) ) 
+          { if ( data_type == 'ereg' && file.exists(global_images$climar) )
               leaflet::addControl(.,
                                   html = GenerarHTMLLogo(
-                                    global_images$climax, "CLIMAX"), 
+                                    global_images$climar, "CLIMAR"),
                                   position = "bottomleft",
-                                  className = "info legend logos climax")
+                                  className = "info legend logos climar")
             else . }
     },
     definir_estilos_css = function() {
@@ -601,8 +601,8 @@ PlotsHelper <- R6::R6Class(
         ".leaflet-control.map-title {text-align: center; padding-left: 10px; padding-right: 10px; font-weight: bold; font-size: 14px; line-height: 15px; margin-top: 17px !important;}"
       css_logos <- 
         ".logos {background: rgba(255, 255, 255, 0.5) !important;}"
-      css_logo_climax <- 
-        ".logos.climax img {width: 70px; height: 66px;}"
+      css_logo_climar <-
+        ".logos.climar img {width: 70px; height: 66px;}"
       css_logo_cima <- 
         ".logos.cima img {width: 70px; height: 63px;}"
       css_logo_smn <- 
@@ -618,7 +618,7 @@ PlotsHelper <- R6::R6Class(
       # Convert CSS to HTML
       html_fix <- htmltools::tags$style(
         type = "text/css", paste(css_fix_1, css_fix_2, css_fix_3, css_title, css_logos,
-                                 css_logo_climax, css_logo_cima, css_logo_smn, css_logo_crcsas,
+                                 css_logo_climar, css_logo_cima, css_logo_smn, css_logo_crcsas,
                                  css_hide_button, css_fa_eye, css_fa_eye_slash))
     },
     definir_javascript = function() {
@@ -698,12 +698,12 @@ PlotsHelper <- R6::R6Class(
       
       # Identificar modelo en pronósticos CRC-SAS-CPT
       modelo <- stringr::str_extract(base_file$basename, cpt_regex_modelos)
-      # Si no se obtiene nada, el prono debe ser un prono Climax
+      # Si no se obtiene nada, el prono debe ser un prono Climar
       if ( is.na(modelo) )
         modelo <- stringr::str_extract(base_file$basename, ereg_regex_modelos)
       # Los nombres de los modelos siempre va en mayúsculas
       modelo <- toupper(modelo)
-      # El modelo MME de los pronos Climax, debe ser renombrado
+      # El modelo MME de los pronos Climar, debe ser renombrado
       if ( toupper(modelo) == "MME" )
         modelo <- switch(lang, "en" = "NMME individual models",
                          "es" = "modelos individuales del NMME",
