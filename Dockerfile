@@ -253,7 +253,7 @@ RUN chmod a+x /startup.sh
 # Create script to check container health
 RUN printf "#!/bin/bash\n\
 if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep Main.R | wc -l) == 0 ] \n\
+   [ \$(ps -ef | grep 'Main.R' | grep -v 'grep' | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\
