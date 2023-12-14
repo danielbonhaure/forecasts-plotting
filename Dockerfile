@@ -219,11 +219,16 @@ FROM plotter_mgmt AS plotter-core
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Renew PLOTTER_HOME
+# Renew PLOTTER ARGs
 ARG PLOTTER_HOME
+ARG PLOTTER_DATA
 
 # Renew CRON ARGs
 ARG CRON_TIME_STR
+
+# Set read-only environment variables
+ENV PLOTTER_HOME=${PLOTTER_HOME}
+ENV PLOTTER_DATA=${PLOTTER_DATA}
 
 # Set environment variables
 ENV CRON_TIME_STR=${CRON_TIME_STR}
