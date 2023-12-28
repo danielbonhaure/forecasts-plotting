@@ -157,9 +157,17 @@ ARG PLOTTER_DATA
 
 # Create PLOTTER_HOME folder
 RUN mkdir -p ${PLOTTER_HOME}
+RUN mkdir -p ${PLOTTER_HOME}/lib
+RUN mkdir -p ${PLOTTER_HOME}/logos
 
 # Copy project
-COPY . ${PLOTTER_HOME}
+COPY ./lib/ ${PLOTTER_HOME}/lib
+COPY ./logos/ ${PLOTTER_HOME}/logos
+COPY ./config.yaml ${PLOTTER_HOME}
+COPY ./DatosEntrada.R ${PLOTTER_HOME}
+COPY ./ExpresionesRegulares.R ${PLOTTER_HOME}
+COPY ./Helpers.R ${PLOTTER_HOME}
+COPY ./Main.R ${PLOTTER_HOME}
 
 # Create input and output folders (these folders are too big so they must be used them as volumes)
 RUN mkdir -p ${PLOTTER_DATA}/shapefiles
