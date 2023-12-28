@@ -175,6 +175,19 @@ RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_figuras/web-crc-sas
 RUN mkdir -p ${PLOTTER_DATA}/ereg/generados/nmme_figuras/web-sissa
 RUN mkdir -p ${PLOTTER_DATA}/ereg/descargas/NMME
 
+# Save Git commit hash of this build into ${PLOTTER_HOME}/repo_version.
+# https://github.com/docker/hub-feedback/issues/600#issuecomment-475941394
+# https://docs.docker.com/build/building/context/#keep-git-directory
+COPY ./.git /tmp/git
+RUN export head=$(cat /tmp/git/HEAD | cut -d' ' -f2) && \
+    if echo "${head}" | grep -q "refs/heads"; then \
+    export hash=$(cat /tmp/git/${head}); else export hash=${head}; fi && \
+    echo "${hash}" > ${PLOTTER_HOME}/repo_version && rm -rf /tmp/git
+
+# Set permissions of app files
+RUN chmod -R ug+rw,o+r ${PLOTTER_HOME}
+RUN chmod -R ug+rw,o+r ${PLOTTER_DATA}
+
 
 
 ###########################################
