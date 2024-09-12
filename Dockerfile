@@ -298,7 +298,7 @@ RUN chmod a+x /startup.sh
 RUN printf "#!/bin/bash\n\
 if [ \$(find ${PLOTTER_HOME} -type f -name '*.pid' 2>/dev/null | wc -l) != 0 ] || \n\
    [ \$(echo 'KEYS *' | redis-cli -h \${REDIS_HOST} 2>/dev/null | grep -c fcsts) != 0 ] && \n\
-   [ \$(ps -ef | grep -v 'grep' | grep -c 'Main.R' | wc -l) == 0 ] \n\
+   [ \$(ps -ef | grep -v 'grep' | grep -c 'Main.R') == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\
