@@ -60,7 +60,6 @@ Script <- R6Class("Script",
               pid.file <- private$getPidFile()
               writeLines(text = as.character(pid), con = pid.file)
             }
-            private$start.time <<- Sys.time()
             logger::log_info(paste0("Iniciando script ", private$name, " con PID ", pid))
           } else {
             logger::log_error(paste0("El script actualmente esta corriendo con el PID ", pid))
