@@ -63,7 +63,9 @@ RUN apt-get -y -qq update && \
         # to install classInt, a dependency of sf
         gfortran \
         # to install units, a dependency of sf
-        libudunits2-dev && \
+        libudunits2-dev \
+        # to install redux
+        libhiredis-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # set CRAN mirror
@@ -97,6 +99,7 @@ RUN R -e "options(warn=2); install.packages('automap', repos=${CRAN_MIRROR}, ver
 RUN R -e "options(warn=2); install.packages('leaflet.extras2', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('RCurl', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('optparse', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
+RUN R -e "options(warn=2); install.packages('redux', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 
 
 
@@ -120,6 +123,8 @@ RUN apt-get -y -qq update && \
         libgdal-dev \
         # to be able to use units, a dependency of sf
         libudunits2-dev \
+        # to be able to use redux
+        libhiredis-dev \
         # to be able to use htmlwidgets::saveWidget with selfcontained = TRUE
         pandoc && \
     rm -rf /var/lib/apt/lists/*
@@ -275,8 +280,9 @@ RUN chmod a+x /startup.sh
 
 # Create script to check container health
 RUN printf "#!/bin/bash\n\
-if [ \$(ls /tmp/plotter.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep 'Main.R' | grep -v 'grep' | wc -l) == 0 ] \n\
+if [ \$(find ${PLOTTER_HOME} -type f -name '*.pid' 2>/dev/null | wc -l) != 0 ] || \n\
+   [ \$(echo 'KEYS *' | redis-cli -h \${REDIS_HOST} 2>/dev/null | grep -c fcsts) != 0 ] && \n\
+   [ \$(ps -ef | grep -v 'grep' | grep -c 'Main.R' | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\

@@ -70,11 +70,16 @@ rm(pack, list.of.packages); gc()
 source(here::here("lib", "Configuracion.R"), echo = FALSE, chdir = TRUE)
 
 # Cargar clases
+source(here::here("Script.R"), echo = FALSE, chdir = TRUE)
 source(here::here("Helpers.R"), echo = FALSE, chdir = TRUE)
 source(here::here("DatosEntrada.R"), echo = FALSE, chdir = TRUE)
 
 # Cargar expresiones regulares (ya definidas de acuerdo a la configuración)
 source(here::here("ExpresionesRegulares.R"), echo = FALSE, chdir = TRUE)
+
+# Iniciar script
+fcsts_plotting <- Script$new(name = "fcsts-plotting")
+fcsts_plotting$start()
 
 # ------------------------------------------------------------------------------
 
@@ -1207,9 +1212,9 @@ for ( i in indices ) {
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 7. Borrar archivo con PID, para verificar salud del contenedor ----
+# ---- PASO 7. Borrar PID, para verificar salud del contenedor ----
 
-# Remove the file
-file.remove("/tmp/plotter.pid")
+# Finalizar script
+fcsts_plotting$stop()
 
 # ------------------------------------------------------------------------------
