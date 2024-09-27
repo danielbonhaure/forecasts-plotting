@@ -66,5 +66,5 @@ ereg:
     crcsas: "/data/ereg/generados/nmme_figuras/web-crc-sas"
     sissa: "/data/ereg/generados/nmme_figuras/web-sissa"
   suavizar_graficos: !!bool TRUE
-  dry_mask_file: "/data/ereg/descargas/NMME/dry_mask.nc"
+  dry_mask_file: "/data/ereg/generados/nmme_output/dry_mask.nc"
   apply_dry_mask: !!bool TRUE
