@@ -138,40 +138,48 @@ DatosEntrada <- R6::R6Class(
         det_fcst_config$input_folders$calibrated_data$forecasts, '/', 
         self$files_info$det_fcst_file)
       
-      # Crear estrategia de corrección
-      correction_strategy <- NULL
-      if ( !is.null(det_fcst_config$correction_strategies$calibrated_data$det_values$forecasts[[self$variable]]) ) {
-        correction_factory <- CorrectionStrategyFactory$new(
-          strategy = det_fcst_config$correction_strategies$calibrated_data$det_values$forecasts[[self$variable]])
-        correction_strategy <- correction_factory$create_obj(
-          df_to_get_sd = self$obs_data$data, value_col = self$variable)
+      # Obtener los gráficos a producir
+      output_plots <- private$pv_config$get_config("output_plots")
+      
+      # Este archivo solo es obligatorio solo si se va a utilizar
+      if ( "anom" %in% output_plots || "det.fcst" %in% output_plots || file.exists(det_fcst_file) ) {
+        
+        # Crear estrategia de corrección
+        correction_strategy <- NULL
+        if ( !is.null(det_fcst_config$correction_strategies$calibrated_data$det_values$forecasts[[self$variable]]) ) {
+          correction_factory <- CorrectionStrategyFactory$new(
+            strategy = det_fcst_config$correction_strategies$calibrated_data$det_values$forecasts[[self$variable]])
+          correction_strategy <- correction_factory$create_obj(
+            df_to_get_sd = self$obs_data$data, value_col = self$variable)
+        }
+        
+        # Crear proveedor de factoría
+        factory_provider <- FcstDataFactoryProvider$new(
+          self$variable)
+        # Obtener factoría
+        data_factory <- factory_provider$get_factory()
+        
+        # Definir parámetros para creación del objeto 
+        # que permite obtener los datos
+        params <- list()
+        params[['data_file']] <- det_fcst_file
+        params[['data_variable']] <- self$variable
+        params[['target_months']] <- 
+          stringr::str_split(self$files_info$target_months, '-') %>% 
+            purrr::reduce(c) %>% as.numeric()
+        params[['time']] <- 'init_time'
+        if (!is.null(correction_strategy))
+          params[['correction_strategy']] <- correction_strategy
+        # Crear objeto que permite acceder a los datos
+        self$pred_det_fcst_data <- do.call(data_factory$create_det_obj, params)
+        
+        # Se agrega la columna anomaly o self$variable según sea necesario
+        self$pred_det_fcst_data$add_anom_or_det(
+          df_to_get_mean = self$obs_data$data,
+          self$files_info$hcst_first_year,
+          self$files_info$hcst_last_year)
+        
       }
-      
-      # Crear proveedor de factoría
-      factory_provider <- FcstDataFactoryProvider$new(
-        self$variable)
-      # Obtener factoría
-      data_factory <- factory_provider$get_factory()
-      
-      # Definir parámetros para creación del objeto 
-      # que permite obtener los datos
-      params <- list()
-      params[['data_file']] <- det_fcst_file
-      params[['data_variable']] <- self$variable
-      params[['target_months']] <- 
-        stringr::str_split(self$files_info$target_months, '-') %>% 
-          purrr::reduce(c) %>% as.numeric()
-      params[['time']] <- 'init_time'
-      if (!is.null(correction_strategy))
-        params[['correction_strategy']] <- correction_strategy
-      # Crear objeto que permite acceder a los datos
-      self$pred_det_fcst_data <- do.call(data_factory$create_det_obj, params)
-      
-      # Se agrega la columna anomaly o self$variable según sea necesario
-      self$pred_det_fcst_data$add_anom_or_det(
-        df_to_get_mean = self$obs_data$data,
-        self$files_info$hcst_first_year, 
-        self$files_info$hcst_last_year)
     },
     pv_get_pred_det_hcst_data = function() {
       # Extraer configuración
@@ -182,40 +190,48 @@ DatosEntrada <- R6::R6Class(
         det_hcst_config$input_folders$calibrated_data$hindcasts, '/', 
         self$files_info$det_hcst_file)
       
-      # Crear estrategia de corrección
-      correction_strategy <- NULL
-      if ( !is.null(det_hcst_config$correction_strategies$calibrated_data$det_values$hindcasts[[self$variable]]) ) {
-        correction_factory <- CorrectionStrategyFactory$new(
-          strategy = det_hcst_config$correction_strategies$calibrated_data$det_values$hindcasts[[self$variable]])
-        correction_strategy <- correction_factory$create_obj(
-          df_to_get_sd = self$obs_data$data, value_col = self$variable)
+      # Obtener los gráficos a producir
+      output_plots <- private$pv_config$get_config('output_plots')
+      
+      # Este archivo solo es obligatorio solo si se va a utilizar
+      if ( 'corr' %in% output_plots|| file.exists(det_hcst_file) ) {
+        
+        # Crear estrategia de corrección
+        correction_strategy <- NULL
+        if ( !is.null(det_hcst_config$correction_strategies$calibrated_data$det_values$hindcasts[[self$variable]]) ) {
+          correction_factory <- CorrectionStrategyFactory$new(
+            strategy = det_hcst_config$correction_strategies$calibrated_data$det_values$hindcasts[[self$variable]])
+          correction_strategy <- correction_factory$create_obj(
+            df_to_get_sd = self$obs_data$data, value_col = self$variable)
+        }
+        
+        # Crear proveedor de factoría
+        factory_provider <- FcstDataFactoryProvider$new(
+          self$variable)
+        # Obtener factoría
+        data_factory <- factory_provider$get_factory()
+        
+        # Definir parámetros para creación del objeto 
+        # que permite obtener los datos
+        params <- list()
+        params[['data_file']] <- det_hcst_file
+        params[['data_variable']] <- self$variable
+        params[['target_months']] <- 
+          stringr::str_split(self$files_info$target_months, '-') %>% 
+          purrr::reduce(c) %>% as.numeric()
+        params[['time']] <- 'init_time'
+        if (!is.null(correction_strategy))
+          params[['correction_strategy']] <- correction_strategy
+        # Crear objeto que permite acceder a los datos
+        self$pred_det_hcst_data <- do.call(data_factory$create_det_obj, params)
+        
+        # Se agrega la columna anomaly o self$variable según sea necesario
+        self$pred_det_hcst_data$add_anom_or_det(
+          df_to_get_mean = self$obs_data$data,
+          self$files_info$hcst_first_year,
+          self$files_info$hcst_last_year)
+        
       }
-      
-      # Crear proveedor de factoría
-      factory_provider <- FcstDataFactoryProvider$new(
-        self$variable)
-      # Obtener factoría
-      data_factory <- factory_provider$get_factory()
-      
-      # Definir parámetros para creación del objeto 
-      # que permite obtener los datos
-      params <- list()
-      params[['data_file']] <- det_hcst_file
-      params[['data_variable']] <- self$variable
-      params[['target_months']] <- 
-        stringr::str_split(self$files_info$target_months, '-') %>% 
-        purrr::reduce(c) %>% as.numeric()
-      params[['time']] <- 'init_time'
-      if (!is.null(correction_strategy))
-        params[['correction_strategy']] <- correction_strategy
-      # Crear objeto que permite acceder a los datos
-      self$pred_det_hcst_data <- do.call(data_factory$create_det_obj, params)
-      
-      # Se agrega la columna anomaly o self$variable según sea necesario
-      self$pred_det_hcst_data$add_anom_or_det(
-        df_to_get_mean = self$obs_data$data,
-        self$files_info$hcst_first_year, 
-        self$files_info$hcst_last_year)
     },
     pv_get_pred_prob_fcst_data = function() {
       # Extraer configuración
@@ -256,45 +272,59 @@ DatosEntrada <- R6::R6Class(
         prob_hcst_config$input_folders$calibrated_data$hindcasts, '/', 
         self$files_info$prob_hcst_file)
       
-      # Crear proveedor de factoría
-      factory_provider <- FcstDataFactoryProvider$new(
-        self$variable)
-      # Obtener factoría
-      data_factory <- factory_provider$get_factory()
+      # Este archivo no se usa para ningún gráfico, así que puede no estar!
+      if ( file.exists(prob_hcst_file) ) {
       
-      # Definir parámetros para creación del objeto 
-      # que permite obtener los datos
-      params <- list()
-      params[['data_file']] <- prob_hcst_file
-      params[['data_variable']] <- self$variable
-      params[['target_months']] <- 
-        stringr::str_split(self$files_info$target_months, '-') %>% 
-        purrr::reduce(c) %>% as.numeric()
-      params[['time']] <- 'init_time'
-      # Crear objeto que permite acceder a los datos
-      self$pred_prob_hcst_data <- do.call(data_factory$create_prob_obj, params)
+        # Crear proveedor de factoría
+        factory_provider <- FcstDataFactoryProvider$new(
+          self$variable)
+        # Obtener factoría
+        data_factory <- factory_provider$get_factory()
+        
+        # Definir parámetros para creación del objeto 
+        # que permite obtener los datos
+        params <- list()
+        params[['data_file']] <- prob_hcst_file
+        params[['data_variable']] <- self$variable
+        params[['target_months']] <- 
+          stringr::str_split(self$files_info$target_months, '-') %>% 
+          purrr::reduce(c) %>% as.numeric()
+        params[['time']] <- 'init_time'
+        # Crear objeto que permite acceder a los datos
+        self$pred_prob_hcst_data <- do.call(data_factory$create_prob_obj, params)
+        
+        # Agregar columna con categorías
+        self$pred_prob_hcst_data$add_categories()
       
-      # Agregar columna con categorías
-      self$pred_prob_hcst_data$add_categories()
+      }
     },
     pv_get_pred_prob_xtrm_data = function() {
+        
+      # Extraer configuración
+      prob_xtrm_config <- private$pv_config$get_config(self$files_info$type)
+      
+      # Identificar archivos con los datos
+      prob_xtrm_file <- paste0(
+        prob_xtrm_config$input_folders$calibrated_data$forecasts, '/',
+        self$files_info$prob_xtrm_file)
+      
+      # Obtener los gráficos a producir
+      output_plots <- private$pv_config$get_config('output_plots')
+      
       # La probabilidad de extremos solo se calcula para EREG
-      if (self$files_info$type == 'ereg') {
-        
-        # Extraer configuración
-        prob_xtrm_config <- private$pv_config$get_config(self$files_info$type)
-        
-        # Identificar archivos con los datos
-        prob_xtrm_file <- paste0(
-          prob_xtrm_config$input_folders$calibrated_data$forecasts, '/',
-          self$files_info$prob_xtrm_file)
+      # Este archivo solo es obligatorio solo si se va a utilizar
+      if (self$files_info$type == 'ereg' &&
+         ('b20.fcst' %in% output_plots || 'a80.fcst' %in% output_plots ||
+          'dry.fcst' %in% output_plots || 'wet.fcst' %in% output_plots ||
+          'hot.fcst' %in% output_plots || 'cold.fcst' %in% output_plots ||
+          file.exists(prob_xtrm_file)) ) {
         
         # Crear proveedor de factoría
         factory_provider <- FcstDataFactoryProvider$new(
           self$variable)
         # Obtener factoría
         data_factory <- factory_provider$get_factory()
-
+        
         # Definir parámetros para creación del objeto
         # que permite obtener los datos
         params <- list()

@@ -322,7 +322,7 @@ for ( i in indices ) {
   
   
   #
-  # Definir la grilla a ser utilizada para lel suaviado de los gráficos
+  # Definir la grilla a ser utilizada para el suaviado de los gráficos
   #
   
   
@@ -334,27 +334,27 @@ for ( i in indices ) {
     grid_resolution <- global_config$get_config("unify_grid_resolution")
     
     new_grid_sf <- tibble::as_tibble(
-      expand.grid(longitude = seq(from = spatial_domain$wlo, 
-                                  to = spatial_domain$elo, 
-                                  by = grid_resolution), 
-                  latitude = seq(from = spatial_domain$sla, 
-                                 to = spatial_domain$nla, 
+      expand.grid(longitude = seq(from = spatial_domain$wlo,
+                                  to = spatial_domain$elo,
+                                  by = grid_resolution),
+                  latitude = seq(from = spatial_domain$sla,
+                                 to = spatial_domain$nla,
                                  by = grid_resolution))) %>%
-      sf::st_as_sf(coords = c("longitude", "latitude"), 
+      sf::st_as_sf(coords = c("longitude", "latitude"),
                    remove = FALSE, crs = 4326)
   } else {
     
-    data_df <- datos_entrada$pred_det_fcst_data$data
+    data_df <- datos_entrada$pred_prob_fcst_data$data
     delta <- min(spatial_dist(data_df$longitude)) / 2
     
     new_grid_sf <- tibble::as_tibble(
-      expand.grid(longitude = seq(from = min(data_df$longitude) - delta, 
-                                  to = max(data_df$longitude) + delta, 
-                                  by = delta*2), 
-                  latitude = seq(from = max(data_df$latitude) + delta, 
-                                 to = spatial_domain$sla, 
+      expand.grid(longitude = seq(from = min(data_df$longitude, na.rm = TRUE) - delta,
+                                  to = max(data_df$longitude, na.rm = TRUE) + delta,
+                                  by = delta*2),
+                  latitude = seq(from = max(data_df$latitude, na.rm = TRUE) + delta,
+                                 to = spatial_domain$sla,
                                  by = -delta*2))) %>%
-      sf::st_as_sf(coords = c("longitude", "latitude"), 
+      sf::st_as_sf(coords = c("longitude", "latitude"),
                    remove = FALSE, crs = 4326)
   }
   
@@ -390,7 +390,7 @@ for ( i in indices ) {
       # Interpolar máscara
       dry_mask_trgt_months <- DryMaskHelper$interpolate(
         dry_mask_df = dry_mask_trgt_months,
-        dest_points_df = datos_entrada$pred_det_fcst_data$data,
+        dest_points_df = datos_entrada$pred_prob_fcst_data$data,
         spatial_domain = spatial_domain
       ) %>% exclude_points_outside_buffered_crcsas()
       
@@ -480,7 +480,7 @@ for ( i in indices ) {
   # Graficar todos los años en el dataframe de forecasts
   #
   
-  anhos_pronosticados <- unique(datos_entrada$pred_det_fcst_data$data$year)
+  anhos_pronosticados <- unique(datos_entrada$pred_prob_fcst_data$data$year)
   logger::log_info(glue::glue("Se van a generar gráficos para los siguientes años: {anhos_pronosticados}"))
   
   for (data_year in anhos_pronosticados) {
@@ -488,14 +488,16 @@ for ( i in indices ) {
     # Determinar si los datos forman una grilla regular. Esto se debe
     # hacer antes de exluir puntos fuera del crcsas, en realidad, antes
     # de excluir cualquier punto en los datos.
-    det_gridded_data <- are_points_gridded(
-      points_df = datos_entrada$pred_det_fcst_data$data %>%
-        dplyr::filter(year == data_year) %>%
-        dplyr::select(longitude, latitude))
     prob_gridded_data <- are_points_gridded(
       points_df = datos_entrada$pred_prob_fcst_data$data %>%
         dplyr::filter(year == data_year) %>%
         dplyr::select(longitude, latitude))
+    if ( "anom" %in% output_plots || "det.fcst" %in% output_plots ) {
+      det_gridded_data <- are_points_gridded(
+        points_df = datos_entrada$pred_det_fcst_data$data %>%
+          dplyr::filter(year == data_year) %>%
+          dplyr::select(longitude, latitude))
+    }
     if ( base_file$type == "ereg" ) {
       xtrm_gridded_data <- are_points_gridded(
         points_df = datos_entrada$pred_prob_xtrm_data$data %>%
