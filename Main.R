@@ -226,16 +226,16 @@ if ( length(ereg_base_files) == 0 ) {
         stringr::str_extract(basename, ereg_regex_variables), '_', 
         ifelse(
           all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-          yes=1982, no=1983), '_',
+          yes=1991, no=1992), '_',
         stringr::str_extract(basename, ereg_regex_months), 
         '.nc'),
       uncalibrated_fcst_file = NA_character_,
       hcst_first_year = ifelse(
         all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-        yes=1982, no=1983),
+        yes=1991, no=1992),
       hcst_last_year = ifelse(
         all(global_ic$month < MonthsHelper$trimester_to_seq(trimester)),
-        yes=2010, no=2011),
+        yes=2020, no=2021),
       target_months = paste(
         MonthsHelper$trimester_to_seq(trimester), collapse='-') 
     ) %>% dplyr::select(-trimester) %>% dplyr::ungroup() %>% 
