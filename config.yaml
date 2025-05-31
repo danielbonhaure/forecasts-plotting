@@ -51,6 +51,9 @@ pycpt:
   output_folder:
     crcsas: "/data/pycpt/plots/web-crc-sas"
     sissa: "/data/pycpt/plots/web-sissa"
+  additional_info:
+    display: !!bool FALSE
+    message: { en: "English", es: "Español", pt: "Português" }
   suavizar_graficos: !!bool TRUE
 
 ereg:  
@@ -65,6 +68,9 @@ ereg:
   output_folder: 
     crcsas: "/data/ereg/generados/nmme_figuras/web-crc-sas"
     sissa: "/data/ereg/generados/nmme_figuras/web-sissa"
+  additional_info:
+    display: !!bool FALSE
+    message: { en: "English", es: "Español", pt: "Português" }
   suavizar_graficos: !!bool TRUE
   dry_mask_file: "/data/ereg/generados/nmme_output/dry_mask.nc"
   apply_dry_mask: !!bool TRUE
