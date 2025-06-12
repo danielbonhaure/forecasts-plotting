@@ -178,12 +178,16 @@ if ( length(cpt_base_files) == 0 ) {
       hcst_last_year = stringr::str_split(
         stringr::str_extract(basename, cpt_regex_hcst_years), '-') %>% 
         unlist() %>% dplyr::last() %>% as.numeric(),
+      cpt_target = basename %>% 
+        stringr::str_extract(paste0('_', cpt_regex_months, '_')) %>%  
+        stringr::str_replace_all('_', ''),
       target_months = ifelse(
-        stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
-          stringr::str_replace_all('_', '') %>% stringr::str_detect('-'),
-        yes = paste(crange(global_ic$month+1, global_ic$month+3, 12), collapse='-'),
-        no = stringr::str_extract(basename, paste0('_', cpt_regex_months, '_')) %>%  
-          stringr::str_replace_all('_', '')) %>% as.character()
+        stringr::str_detect(cpt_target, '-'),
+        yes = paste(crange(
+          as.numeric(stringr::str_split_fixed(cpt_target, '-', 2)[1]),
+          as.numeric(stringr::str_split_fixed(cpt_target, '-', 2)[2]),
+          12), collapse='-'),
+        no = cpt_target) %>% as.character()
     ) %>% dplyr::ungroup() %>%
     dplyr::mutate(
       obs_data_source = stringr::str_extract(basename, cpt_regex_fuente_datos)
@@ -292,6 +296,9 @@ if ( 'trimesters' %in% global_config$get_config('output_trgt_type') ) {
 
 # Borrar objetos que ya no se va a utilizar
 rm(all_base_files, cpt_base_files, ereg_base_files); invisible(gc())
+
+print(base_files)
+stop()
 
 # ------------------------------------------------------------------------------
 
