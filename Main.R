@@ -297,9 +297,6 @@ if ( 'trimesters' %in% global_config$get_config('output_trgt_type') ) {
 # Borrar objetos que ya no se va a utilizar
 rm(all_base_files, cpt_base_files, ereg_base_files); invisible(gc())
 
-print(base_files)
-stop()
-
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
