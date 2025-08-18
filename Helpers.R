@@ -740,7 +740,7 @@ PlotsHelper <- R6::R6Class(
       
       # Definir elementos según idioma
       valid_for <- switch(lang, "en" = "Validity period:", 
-                          "es" = "Periodo de validéz:",
+                          "es" = "Periodo de validez:",
                           "pt" = "Período de validade:")
       init_cond <- switch(lang, "en" = "Initial condition:", 
                           "es" = "Condición inicial:",
