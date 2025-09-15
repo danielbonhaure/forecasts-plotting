@@ -50,7 +50,7 @@ RUN apt-get --quiet --assume-yes update && \
         libudunits2-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# set CRAN mirror
+# Set CRAN mirror
 ARG CRAN_MIRROR="getOption('repos')"
 
 # Install R packages
