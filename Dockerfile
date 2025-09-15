@@ -276,11 +276,11 @@ ENV CRON_TIME_STR=${CRON_TIME_STR}
 RUN printf "\n\
 # Setup cron to run files processor \n\
 ${CRON_TIME_STR} /usr/local/bin/Rscript ${PLOTTER_HOME}/Main.R >> /proc/1/fd/1 2>> /proc/1/fd/1\n\
-\n" > ${PLOTTER_HOME}/crontab.txt
-RUN chmod a+rw ${PLOTTER_HOME}/crontab.txt
+\n" > ${PLOTTER_HOME}/crontab.conf
+RUN chmod a+rw ${PLOTTER_HOME}/crontab.conf
 
 # Setup CRON for root user
-RUN (cat ${PLOTTER_HOME}/crontab.txt) | crontab -
+RUN (cat ${PLOTTER_HOME}/crontab.conf) | crontab -
 
 # Crear script de inicio.
 RUN printf "#!/bin/bash \n\
@@ -392,7 +392,7 @@ RUN chown -R $USER_UID:$USER_GID $PLOTTER_HOME
 RUN chmod u+s $(which cron)
 
 # Setup cron
-RUN (cat $PLOTTER_HOME/crontab.txt) | crontab -u $USR_NAME -
+RUN (cat $PLOTTER_HOME/crontab.conf) | crontab -u $USR_NAME -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
