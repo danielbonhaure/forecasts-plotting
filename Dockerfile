@@ -24,18 +24,6 @@ ARG PLOTTER_HOME="/opt/plotter"
 # Set PLOTTER data folder
 ARG PLOTTER_DATA="/data"
 
-# Set user name and id
-ARG USR_NAME="nonroot"
-ARG USER_UID="1000"
-
-# Set group name and id
-ARG GRP_NAME="nonroot"
-ARG USER_GID="1000"
-
-# Set users passwords
-ARG ROOT_PWD="root"
-ARG USER_PWD=$USR_NAME
-
 # Set global CRON args
 ARG CRON_TIME_STR="0 12 18 * *"
 
@@ -316,103 +304,10 @@ HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
 
 
 
-###################################
-## Stage 6: Create non-root user ##
-###################################
+#####################################################
+## Usage: Commands to Build and Run this container ##
+#####################################################
 
-# Create image
-FROM plotter-core AS plotter_nonroot_builder
-
-# Renew USER args
-ARG USR_NAME
-ARG USER_UID
-ARG GRP_NAME
-ARG USER_GID
-ARG ROOT_PWD
-ARG USER_PWD
-
-# Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # to run sudo
-        sudo && \
-    rm -rf /var/lib/apt/lists/*
-
-# Modify root password
-RUN echo "root:$ROOT_PWD" | chpasswd
-
-# Create a non-root user, so the container can run as non-root
-# OBS: the UID and GID must be the same as the user that own the
-# input and the output volumes, so there isn't perms problems!!
-# Se recomienda crear usuarios en el contendor de esta manera,
-# ver: https://nickjanetakis.com/blog/running-docker-containers-as-a-non-root-user-with-a-custom-uid-and-gid
-# Se agregar --no-log-init para prevenir un problema de seguridad,
-# ver: https://jtreminio.com/blog/running-docker-containers-as-current-host-user/
-RUN groupadd --gid $USER_GID $GRP_NAME
-RUN useradd --no-log-init --uid $USER_UID --gid $USER_GID --shell /bin/bash \
-    --comment "Non-root User Account" --create-home $USR_NAME
-
-# Modify the password of non-root user
-RUN echo "$USR_NAME:$USER_PWD" | chpasswd
-
-# Add non-root user to sudoers and to adm group
-# The adm group was added to allow non-root user to see logs
-RUN usermod -aG sudo $USR_NAME && \
-    usermod -aG adm $USR_NAME
-
-# To allow sudo without password
-# RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
-#     chmod 0440 /etc/sudoers.d/$USR_NAME
-
-
-
-############################################
-## Stage 7: Setup and run final APP image ##
-############################################
-
-# Create image
-FROM plotter_nonroot_builder AS plotter-nonroot
-
-# Become root
-USER root
-
-# Renew PLOTTER_HOME
-ARG PLOTTER_HOME
-
-# Renew USER ARGs
-ARG USR_NAME
-ARG USER_UID
-ARG USER_GID
-
-# Change files owner
-RUN chown -R $USER_UID:$USER_GID $PLOTTER_HOME
-
-# Setup cron to allow it run as a non root user
-RUN chmod u+s $(which cron)
-
-# Setup cron
-RUN (cat $PLOTTER_HOME/crontab.conf) | crontab -u $USR_NAME -
-
-# Add Tini (https://github.com/krallin/tini#using-tini)
-ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
-
-# Run your program under Tini (https://github.com/krallin/tini#using-tini)
-CMD [ "bash", "-c", "/startup.sh" ]
-# or docker run your-image /your/program ...
-
-# Verificar si hubo alguna falla en la ejecución del replicador
-HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
-
-# Access non-root user directory
-WORKDIR /home/$USR_NAME
-
-# Switch back to non-root user to avoid accidental container runs as root
-USER $USR_NAME
-
-
-# Activar docker build kit
-# export DOCKER_BUILDKIT=1
 
 # CONSTRUIR IMAGEN (CORE)
 # docker build --force-rm \
@@ -424,47 +319,38 @@ USER $USR_NAME
 # LEVANTAR IMAGEN A GHCR
 # docker push ghcr.io/danielbonhaure/forecasts-plotting:plotter-core-v1.0
 
-# CONSTRUIR IMAGEN (NON-ROOT
-# docker build --force-rm \
-#   --target plotter-nonroot \
-#   --tag plotter-nonroot:latest \
-#   --build-arg USER_UID=$(stat -c "%u" .) \
-#   --build-arg USER_GID=$(stat -c "%g" .) \
-#   --build-arg CRON_TIME_STR="0 12 18 * *" \
-#   --file Dockerfile .
-
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name plot-pronos \
-#   --volume <path-to-folder>:/data/pycpt/input/predictors \
-#   --volume <path-to-folder>:/data/pycpt/input/predictands \
-#   --volume <path-to-folder>:/data/pycpt/output \
-#   --volume <path-to-folder>:/data/pycpt/plots/web-crc-sas \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc\
-#   --detach plotter-nonroot:latest
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/input/predictors \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/input/predictands \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/output \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/plots/web-crc-sas \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output/rt_forecasts \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output/comb_forecasts \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_figuras/web-crc-sas \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.shp \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.shx \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.prj \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.dbf \
+#   --mount type=bind,src=<path-to-file>,dst=/data/ereg/descargas/NMME/dry_mask.nc\
+#   --detach ghcr.io/danielbonhaure/forecasts-plotting:plotter-core-v1.0
 
 # CORRER MANUALMENTE
 # docker run --name plot-pronos \
-#   --volume <path-to-folder>:/data/pycpt/input/predictors \
-#   --volume <path-to-folder>:/data/pycpt/input/predictands \
-#   --volume <path-to-folder>:/data/pycpt/output \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/rt_forecasts \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_output/comb_forecasts \
-#   --volume <path-to-folder>:/data/ereg/generados/nmme_figuras/web-crc-sas \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shp \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.shx \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.prj \
-#   --volume <path-to-file>:/data/shapefiles/CRC_SAS.dbf \
-#   --volume <path-to-file>:/data/ereg/descargas/NMME/dry_mask.nc \
-#   --volume <path-to-file>:/opt/plotter/config.yaml \
-#   --rm plotter-nonroot:latest Rscript /opt/plotter/Main.R --year 2023 --month 6
-
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/input/predictors \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/input/predictands \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/pycpt/output \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output/rt_forecasts \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_output/comb_forecasts \
+#   --mount type=bind,src=<path-to-folder>,dst=/data/ereg/generados/nmme_figuras/web-crc-sas \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.shp \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.shx \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.prj \
+#   --mount type=bind,src=<path-to-file>,dst=/data/shapefiles/CRC_SAS.dbf \
+#   --mount type=bind,src=<path-to-file>,dst=/data/ereg/descargas/NMME/dry_mask.nc \
+#   --mount type=bind,src=<path-to-file>,dst=/opt/plotter/config.yaml \
+#   --rm ghcr.io/danielbonhaure/forecasts-plotting:plotter-core-v1.0\
+# Rscript /opt/plotter/Main.R --year 2023 --month 6
 

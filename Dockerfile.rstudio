@@ -16,17 +16,8 @@
 # Set R version
 ARG R_VERSION="4.2"
 
-# Set user name and id
-ARG USR_NAME="nonroot"
-ARG USER_UID="1001"  # el usuario rstudio ya tiene el UID 1000
-
-# Set group name and id
-ARG GRP_NAME="nonroot"
-ARG USER_GID="1001"  # el grupo rstudio ya tiene el GID 1000
-
-# Set users passwords
-ARG ROOT_PWD="root"
-ARG USER_PWD=$USR_NAME
+# Set PLOTTER HOME
+ARG PLOTTER_HOME="/opt/plotter"
 
 
 
@@ -42,9 +33,9 @@ FROM rocker/rstudio:${R_VERSION} AS r_builder
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes upgrade && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
         # to install ncdf4  (R)
         libnetcdf-dev \
         # to install anomalize (R)
@@ -104,9 +95,9 @@ FROM rocker/rstudio:${R_VERSION} AS r_final
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes upgrade && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
         # to install ncdf4  (R)
         libnetcdf-dev \
         # to install anomalize (R)
@@ -138,87 +129,49 @@ ENV R_LIBS_SITE="/usr/local/lib/R/site-library"
 
 
 
-#############################################
-## Stage 3: Create and Setup rstudio image ##
-#############################################
+##########################################
+## Stage 3: Install management packages ##
+##########################################
 
 # Create image
-FROM r_final AS rstudio_builder
+FROM r_final AS base_image
 
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # Management packages
-        git htop vim iputils-ping iproute2
-
-# Run the S6 Overlay INIT, para entender porque ENTRYPOINT [ "/init" ], ver:
-# https://github.com/just-containers/s6-overlay, aunque rocker/rstudio usa CMD, ver:
-# https://github.com/rocker-org/rocker-versioned2/blob/master/dockerfiles/rstudio_4.1.2.Dockerfile
-ENTRYPOINT [ "/init" ]
-
-
-
-###################################
-## Stage 4: Create non-root user ##
-###################################
-
-# Create image
-FROM rstudio_builder AS rstudio_nonroot_builder
-
-# Renew USER args
-ARG USR_NAME
-ARG USER_UID
-ARG GRP_NAME
-ARG USER_GID
-ARG ROOT_PWD
-ARG USER_PWD
-
-# Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # to run sudo
-        sudo && \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
+        # to see process with pid 1
+        htop procps \
+        # to clone git repos
+        git \
+        # to download files
+        curl wget \
+        # to allow edit files
+        vim \
+        # to save scripts PID
+        # to check container health
+        redis-tools && \
     rm -rf /var/lib/apt/lists/*
 
-# Modify root password
-RUN echo "root:$ROOT_PWD" | chpasswd
-
-# Create a non-root user, so the container can run as non-root
-# OBS: the UID and GID must be the same as the user that own the
-# input and the output volumes, so there isn't perms problems!!
-# Se recomienda crear usuarios en el contendor de esta manera,
-# ver: https://nickjanetakis.com/blog/running-docker-containers-as-a-non-root-user-with-a-custom-uid-and-gid
-# Se agregar --no-log-init para prevenir un problema de seguridad,
-# ver: https://jtreminio.com/blog/running-docker-containers-as-current-host-user/
-RUN groupadd --gid $USER_GID $GRP_NAME
-RUN useradd --no-log-init --uid $USER_UID --gid $USER_GID --shell /bin/bash \
-    --comment "Non-root User Account" --create-home $USR_NAME
-
-# Modify the password of non-root user
-RUN echo "$USR_NAME:$USER_PWD" | chpasswd
-
-# Add non-root user to sudoers and to adm group
-# The adm group was added to allow non-root user to see logs
-RUN usermod -aG sudo $USR_NAME && \
-    usermod -aG adm $USR_NAME
-
-# To allow sudo without password
-# RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
-#     chmod 0440 /etc/sudoers.d/$USR_NAME
 
 
-
-########################################
-## Stage 5: Setup final rstudio image ##
-########################################
+#############################################
+## Stage 4: Create and Setup RStudio image ##
+#############################################
 
 # Create image
-FROM rstudio_nonroot_builder
+FROM base_image AS plotter-rstudio
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
+        # Management packages
+        iputils-ping iproute2
 
 # Run the S6 Overlay INIT, para entender porque ENTRYPOINT [ "/init" ], ver:
 # https://github.com/just-containers/s6-overlay, aunque rocker/rstudio usa CMD, ver:
@@ -227,8 +180,8 @@ ENTRYPOINT [ "/init" ]
 
 # Resulta que la imagen rocker/rstudio usa s6-overlay, y como se explica aquí:
 # https://github.com/rocker-org/shiny/issues/79#issuecomment-633067470
-# el "process supervisor" s6-overlay debe correr como root. Sin embargo
-# se modificó la imagen para que rstudio corra siempre como no root
+# el "process supervisor" s6-overlay debe correr como root. Sin embargo,
+# la imagen base rstudio, usa gosu para correr como no root!!
 USER root
 
 # AUTHORIZATION
@@ -246,15 +199,16 @@ USER root
 # Build container
 #
 # docker build \
-#  --file Dockerfile.rstudio \
-#  --tag plotter-rstudio:latest .
+#  --target rstudio \
+#  --tag plotter-rstudio:latest \
+#  --file Dockerfile.rstudio .
 
 # Run container
 #
 # docker run -ti --rm \
 #  --name plotter-rstudio \
 #  --env PASSWORD=rstudio \
-#  --volume $(pwd):/home/rstudio/forecasts-plotting \
+#  --mount type=bind,src=$(pwd),dst=/home/rstudio/forecasts-plotting \
 #  --workdir /home/rstudio/forecasts-plotting \
 #  --publish 127.0.0.1:8787:8787 \
 #  --detach plotter-rstudio:latest
