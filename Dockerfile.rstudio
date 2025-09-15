@@ -91,7 +91,7 @@ RUN R -e "options(warn=2); install.packages('optparse', repos=${CRAN_MIRROR}, ve
 # Create image
 FROM rocker/rstudio:${R_VERSION} AS r_final
 
-# set environment variables
+# Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
