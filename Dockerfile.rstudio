@@ -196,7 +196,7 @@ USER root
 # Build container
 #
 # docker build \
-#  --target rstudio \
+#  --target plotter-rstudio \
 #  --tag plotter-rstudio:latest \
 #  --file Dockerfile.rstudio .
 
