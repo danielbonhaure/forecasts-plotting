@@ -56,10 +56,10 @@ RUN apt-get -y -qq update && \
         libhiredis-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# set CRAN mirror
+# Set CRAN mirror
 ARG CRAN_MIRROR="getOption('repos')"
 
-# install R packages
+# Install R packages
 RUN R -e "options(warn=2); install.packages('ncdf4', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('dplyr', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
 RUN R -e "options(warn=2); install.packages('tibble', repos=${CRAN_MIRROR}, verbose=T, quiet=T, keep_outputs='/tmp/')"
@@ -98,7 +98,7 @@ RUN R -e "options(warn=2); install.packages('redux', repos=${CRAN_MIRROR}, verbo
 # Create image
 FROM rocker/r-ver:${R_VERSION} AS r_final
 
-# set environment variables
+# Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
@@ -141,7 +141,7 @@ ENV R_LIBS_SITE="/usr/local/lib/R/site-library"
 # Create PLOTTER image
 FROM r_final AS plotter_builder
 
-# set environment variables
+# Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Renew PLOTTER ARGs
