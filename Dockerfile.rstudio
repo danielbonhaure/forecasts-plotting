@@ -16,9 +16,6 @@
 # Set R version
 ARG R_VERSION="4.2"
 
-# Set PLOTTER HOME
-ARG PLOTTER_HOME="/opt/plotter"
-
 
 
 #################################
