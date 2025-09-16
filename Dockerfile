@@ -44,15 +44,15 @@ RUN apt-get --quiet --assume-yes update && \
     apt-get --quiet --assume-yes upgrade && \
     apt-get --quiet --assume-yes --no-install-recommends install \
         build-essential \
-        # to install ncdf4
+        # to install ncdf4 (R)
         libnetcdf-dev \
-        # to install sf
+        # to install sf (R)
         libgdal-dev \
-        # to install classInt, a dependency of sf
+        # to install classInt, a dependency of sf (R)
         gfortran \
-        # to install units, a dependency of sf
+        # to install units, a dependency of sf (R)
         libudunits2-dev \
-        # to install redux
+        # to install redux (R)
         libhiredis-dev && \
     rm -rf /var/lib/apt/lists/*
 
@@ -109,11 +109,11 @@ RUN apt-get --quiet --assume-yes update && \
         libnetcdf-dev \
         # to be able to use sf (R)
         libgdal-dev \
-        # to be able to use units, a dependency of sf
+        # to be able to use units, a dependency of sf (R)
         libudunits2-dev \
-        # to be able to use redux
+        # to be able to use redux (R)
         libhiredis-dev \
-        # to be able to use htmlwidgets::saveWidget with selfcontained = TRUE
+        # to be able to use htmlwidgets::saveWidget with selfcontained = TRUE (R)
         pandoc && \
     rm -rf /var/lib/apt/lists/*
 
@@ -247,7 +247,7 @@ RUN export head=$(cat /tmp/git/HEAD | cut -d' ' -f2) && \
     export hash=$(cat /tmp/git/${head}); else export hash=${head}; fi && \
     echo "${hash}" > ${PLOTTER_HOME}/repo_version && rm -rf /tmp/git
 
-# Set minimal permissions to the new scripts and files
+# Set minimum required file permissions
 RUN chmod -R u=rw,g=rw,o=r ${PLOTTER_HOME} && \
     chmod -R u=rw,g=rw,o=r ${PLOTTER_DATA}
 
