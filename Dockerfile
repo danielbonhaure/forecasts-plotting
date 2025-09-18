@@ -247,9 +247,9 @@ RUN export head=$(cat /tmp/git/HEAD | cut -d' ' -f2) && \
     export hash=$(cat /tmp/git/${head}); else export hash=${head}; fi && \
     echo "${hash}" > ${PLOTTER_HOME}/repo_version && rm -rf /tmp/git
 
-# Set minimum required file permissions
-RUN chmod -R u=rw,g=rw,o=r ${PLOTTER_HOME} && \
-    chmod -R u=rw,g=rw,o=r ${PLOTTER_DATA}
+# Set minimum required permissions for files and folders
+RUN find ${PLOTTER_HOME} ${PLOTTER_DATA} -type f -exec chmod -R u=rw,g=rw,o=r -- {} + && \
+    find ${PLOTTER_HOME} ${PLOTTER_DATA} -type d -exec chmod -R u=rwx,g=rwx,o=rx -- {} +
 
 
 
