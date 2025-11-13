@@ -1218,9 +1218,25 @@ for ( i in indices ) {
 # ------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------#
-# ---- PASO 7. Borrar PID, para verificar salud del contenedor ----
+# ---- PASO 7. Borrar carpetas con código JS y finalizar el script ----
 
-# Finalizar script
+# Borrar carpetas con código JS
+directories_to_remove <- c(
+  list.dirs(
+    path = global_config$get_config("pycpt")$output_folder$crcsas,
+    recursive = FALSE, full.names = TRUE),
+  list.dirs(
+    path = global_config$get_config("ereg")$output_folder$crcsas,
+    recursive = FALSE, full.names = TRUE),
+  list.dirs(
+    path = global_config$get_config("ereg")$output_folder$sissa,
+    recursive = FALSE, full.names = TRUE)
+)
+for ( dir_path in directories_to_remove ) {
+  base::unlink(dir_path, recursive = TRUE)
+}
+
+# Finalizar script (borra el PID)
 fcsts_plotting$stop()
 
 # ------------------------------------------------------------------------------
