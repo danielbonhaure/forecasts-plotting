@@ -87,11 +87,8 @@ RUN useradd --uid ${USER_UID} --gid ${USER_GID} --create-home \
 RUN echo "${USR_NAME}:${USER_PWD}" | chpasswd
 
 # Set permissions of files and folders in the USR_DIRS directory/ies
-RUN find ${USR_DIRS} -type f -exec chmod -R u=rw,g=rw,o=r -- {} + && \
-    find ${USR_DIRS} -type d -exec chmod -R u=rwx,g=rwx,o=rx -- {} +
-
-# Set permissions of files in USR_DIRS folder
-RUN chmod -R u=rw,g=r,o=r ${USR_DIRS}
+RUN find ${USR_DIRS} -type f -exec chmod -R u=rw,g=r,o=r -- {} + && \
+    find ${USR_DIRS} -type d -exec chmod -R u=rwx,g=rx,o=rx -- {} +
 
 # Setup cron (if necessary)
 RUN count=$(find ${USR_DIRS} -type f -name ${CRONTAB} | wc -l) && [ ${count} = 1 ] \
