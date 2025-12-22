@@ -332,7 +332,7 @@ ENV CRON_TIME_STR=${CRON_TIME_STR}
 ######################################
 
 # Create image
-FROM rplot_core AS rplot-root
+FROM plotter_core AS rplot-root
 
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
